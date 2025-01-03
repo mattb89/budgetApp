@@ -197,20 +197,22 @@
     ></div>
 
     <script>
+      //get current date
+      const datePicker = document.getElementById('datePicker');
+      const today = new Date();
+      const dd = String(today.getDate()).padStart(2, '0');
+      const mm = String(today.getMonth() + 1).padStart(2, '0'); // January is 0!
+      const yyyy = today.getFullYear();
+      const currentDate = `${yyyy}-${mm}-${dd}`;
+      datePicker.value = currentDate;
+      
       document.getElementById("form").addEventListener("submit", function (e) {
         e.preventDefault(); // Prevent the default form submission
         document.getElementById("message").textContent = "Submitting..";
         document.getElementById("message").style.display = "block";
         document.getElementById("submit-button").disabled = true;
 
-        //get current date
-        const datePicker = document.getElementById('datePicker');
-        const today = new Date();
-        const dd = String(today.getDate()).padStart(2, '0');
-        const mm = String(today.getMonth() + 1).padStart(2, '0'); // January is 0!
-        const yyyy = today.getFullYear();
-        const currentDate = `${yyyy}-${mm}-${dd}`;
-        datePicker.value = currentDate;
+
 
         // Collect the form data
         var formData = new FormData(this);
