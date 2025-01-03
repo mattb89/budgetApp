@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <title>Matt's Kewl Budget App</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link
       rel="stylesheet"
@@ -11,6 +12,7 @@
             font-family: Arial, sans-serif;
             margin: 0;
             padding: 0;
+            font-size: 16px;
         }
 
         .container {
@@ -38,6 +40,10 @@
             background-color: #ffffff;
             border: 1px solid #dddddd;
             border-radius: 5px;
+            font-size: 1.2em;
+        }
+        .label {
+            font-size: 25px;
         }
 
         @media (max-width: 600px) {
@@ -60,6 +66,7 @@
         <label class="label">Date of Transaction</label>
         <div class="control">
           <input
+            id="datePicker"
             class="input"
             type="date"
             placeholder="Enter Date"
@@ -76,6 +83,7 @@
             type="number"
             placeholder="Enter USD Value"
             step="0.01"
+            pattern="[0-9]*"
             name="USD Value"
           />
         </div>
@@ -194,6 +202,15 @@
         document.getElementById("message").textContent = "Submitting..";
         document.getElementById("message").style.display = "block";
         document.getElementById("submit-button").disabled = true;
+
+        //get current date
+        const datePicker = document.getElementById('datePicker');
+        const today = new Date();
+        const dd = String(today.getDate()).padStart(2, '0');
+        const mm = String(today.getMonth() + 1).padStart(2, '0'); // January is 0!
+        const yyyy = today.getFullYear();
+        const currentDate = `${yyyy}-${mm}-${dd}`;
+        datePicker.value = currentDate;
 
         // Collect the form data
         var formData = new FormData(this);
