@@ -14,6 +14,17 @@
             padding: 0;
             font-size: 16px;
         }
+        .hero.is-primary.is-bold {
+            padding: 1rem 1.5rem; /* Reduce padding */
+        }
+
+        .hero .hero-body {
+            padding: .5rem; /* Reduce padding in the hero body */
+        }
+
+        .hero .title {
+            font-size: 1.5rem; /* Reduce the font size of the title */
+        }
 
         .container {
             max-width: 1200px;
@@ -88,6 +99,14 @@
             min="0.00"
             name="USD Value"
           />
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="control">
+          <label class="checkbox">
+            <input id="euroCheckbox" type="checkbox" name="EUR Entry" value="Yes" /> EUR
+          </label>
         </div>
       </div>
 
@@ -217,74 +236,98 @@
       const currentDate = `${yyyy}-${mm}-${dd}`;
       datePicker.value = currentDate;
       
-      document.getElementById("form").addEventListener("submit", function (e) {
-        e.preventDefault(); // Prevent the default form submission
-        document.getElementById("message").textContent = "Submitting..";
-        document.getElementById("message").style.display = "block";
-        document.getElementById("submit-button").disabled = true;
-	
-	//This section of the script will split the amount in half if selected
-	const amountField = document.getElementById("amount");
-        const splitCheckbox = document.getElementById("split-expense");
-	
-	if(splitCheckbox.checked) {
-		const originalAmount = parseFloat(amountField.value);
-		amountField.value = (originalAmount / 2).toFixed(2);
-	}
-	
+      document.getElementById("form").addEventListener("submit", async function (e) {
+          e.preventDefault(); // Prevent the default form submission
+          document.getElementById("message").textContent = "Submitting..";
+          document.getElementById("message").style.display = "block";
+          document.getElementById("submit-button").disabled = true;
 
-        // Collect the form data
-        var formData = new FormData(this);
-        var keyValuePairs = [];
-        for (var pair of formData.entries()) {
-          keyValuePairs.push(pair[0] + "=" + pair[1]);
-        }
+          const amountField = document.getElementById("amount");
+          const splitCheckbox = document.getElementById("split-expense");
+          const euroCheckbox = document.getElementById("euroCheckbox");
 
-        var formDataString = keyValuePairs.join("&");
+          let originalAmount = parseFloat(amountField.value);
 
-        // Send a POST request to your Google Apps Script
-        fetch(
-          "https://script.google.com/macros/s/AKfycbyZ936HVHDnBAl5efroVRT7CpQ5z4IU3d5V1-dQRxU8qSHgf9h1-RTJS-lJG6lKeqtTzQ/exec",
-          {
-            redirect: "follow",
-            method: "POST",
-            body: formDataString,
-            headers: {
-              "Content-Type": "text/plain;charset=utf-8",
-            },
+          // Handle split expense
+          if (splitCheckbox.checked) {
+              amountField.value = (originalAmount / 2).toFixed(2);
           }
-        )
-          .then(function (response) {
-            // Check if the request was successful
-            if (response) {
-              return response; // Assuming your script returns JSON response
-            } else {
-              throw new Error("Failed to submit the form.");
-            }
-          })
-          .then(function (data) {
-            // Display a success message
-            document.getElementById("message").textContent =
-              "Data submitted successfully!";
-            document.getElementById("message").style.display = "block";
-            document.getElementById("message").style.backgroundColor = "green";
-            document.getElementById("message").style.color = "beige";
-            document.getElementById("submit-button").disabled = false;
-            document.getElementById("form").reset();
 
-            setTimeout(function () {
-              document.getElementById("message").textContent = "";
-              document.getElementById("message").style.display = "none";
-            }, 2600);
-          })
-          .catch(function (error) {
-            // Handle errors, you can display an error message here
-            console.error(error);
-            document.getElementById("message").textContent =
-              "An error occurred while submitting the form.";
-            document.getElementById("message").style.display = "block";
-          });
+          // Handle EUR conversion
+          if (euroCheckbox.checked) {
+              await getDatRate();
+          }
+
+          // Proceed to construct FormData and make the POST request
+          var formData = new FormData(this);
+          var keyValuePairs = [];
+          for (var pair of formData.entries()) {
+              keyValuePairs.push(pair[0] + "=" + pair[1]);
+          }
+
+          var formDataString = keyValuePairs.join("&");
+
+          // Send a POST request
+          fetch(
+              "https://script.google.com/macros/s/AKfycbyZ936HVHDnBAl5efroVRT7CpQ5z4IU3d5V1-dQRxU8qSHgf9h1-RTJS-lJG6lKeqtTzQ/exec",
+              {
+                  redirect: "follow",
+                  method: "POST",
+                  body: formDataString,
+                  headers: {
+                      "Content-Type": "text/plain;charset=utf-8",
+                  },
+              }
+          )
+              .then(function (response) {
+                  if (response) {
+                      return response;
+                  } else {
+                      throw new Error("Failed to submit the form.");
+                  }
+              })
+              .then(function (data) {
+                  document.getElementById("message").textContent =
+                      "Data submitted successfully!";
+                  document.getElementById("message").style.display = "block";
+                  document.getElementById("message").style.backgroundColor = "green";
+                  document.getElementById("message").style.color = "beige";
+                  document.getElementById("submit-button").disabled = false;
+                  document.getElementById("form").reset();
+
+                  setTimeout(function () {
+                      document.getElementById("message").textContent = "";
+                      document.getElementById("message").style.display = "none";
+                  }, 2600);
+              })
+              .catch(function (error) {
+                  console.error(error);
+                  document.getElementById("message").textContent =
+                      "An error occurred while submitting the form.";
+                  document.getElementById("message").style.display = "block";
+              });
       });
+
+      // Function to fetch the EUR rate
+      async function getDatRate() {
+          const apiUrl = "https://api.exchangerate-api.com/v4/latest/USD";
+          try {
+              const response = await fetch(apiUrl);
+              if (!response.ok) {
+                  throw new Error(`API error: ${response.status}`);
+              }
+              const data = await response.json();
+              const eurRate = data.rates.EUR;
+
+              // Assign the EUR rate to the textbox value
+              const amountField = document.getElementById("amount");
+              amountField.value = ((amountField.value)*(eurRate.toFixed(4))).toFixed(2);
+          } catch (error) {
+              console.error("Error fetching the EUR rate:", error);
+              alert("Failed to fetch the EUR conversion rate.");
+          }
+      }
+
     </script>
   </body>
 </html>
