@@ -310,7 +310,7 @@
 
       // Function to fetch the EUR rate
       async function getDatRate() {
-          const apiUrl = "https://api.exchangerate-api.com/v4/latest/USD";
+          const apiUrl = "https://open.er-api.com/v6/latest/USD";
           try {
               const response = await fetch(apiUrl);
               if (!response.ok) {
@@ -321,7 +321,7 @@
 
               // Assign the EUR rate to the textbox value
               const amountField = document.getElementById("amount");
-              amountField.value = ((amountField.value)*(eurRate.toFixed(4))).toFixed(2);
+              amountField.value = ((amountField.value)/(eurRate.toFixed(6))).toFixed(2);
           } catch (error) {
               console.error("Error fetching the EUR rate:", error);
               alert("Failed to fetch the EUR conversion rate.");
