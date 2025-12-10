@@ -1,13 +1,14 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Matt's Kewl Budget App</title>
+    <title>KAMACON Budget App</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css"
     />
     <style>
+        /* Existing CSS for layout */
         body {
             font-family: Arial, sans-serif;
             margin: 0;
@@ -56,6 +57,15 @@
         .label {
             font-size: 25px;
         }
+        /* New CSS for calculation display */
+        #calculation-summary {
+            margin-top: 15px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+            font-weight: bold;
+        }
 
         @media (max-width: 600px) {
             .content {
@@ -87,29 +97,34 @@
       </div>
 
       <div class="field">
-        <label class="label">USD Value</label>
+        <label class="label" id="amount-label">USD Value</label>
         <div class="control">
           <input
             id="amount"
             class="input"
             type="text"
             inputmode="decimal"
-            placeholder="Enter USD Value"
+            placeholder="Enter Value"
             step="any"
             min="0.00"
-            name="USD Value"
-          />
+            name="Original Value" />
         </div>
       </div>
 
       <div class="field">
         <div class="control">
           <label class="checkbox">
-            <input id="euroCheckbox" type="checkbox" name="EUR Entry" value="Yes" /> EUR
+            <input id="euroCheckbox" type="checkbox" name="EUR Entry" value="Yes" onchange="updateAmountLabel()" /> EUR
           </label>
         </div>
       </div>
 
+      <div id="calculation-summary" style="display: none;">
+          <p>
+              Calculated USD Expense: $<span id="calculated-usd">0.00</span>
+              <span id="split-info" style="font-weight: normal; font-size: 0.8em;"></span>
+          </p>
+      </div>
       <div class="field">
         <label class="label">Category</label>
         <div class="control">
@@ -121,7 +136,7 @@
             <option value="Shopping">Shopping</option>
             <option value="Groceries">Groceries</option>
             <option value="Gas">Gas</option>
-            <option value="Haircut">Haircut</option>
+            <option value="Personal Care">Personal Care</option>
             <option value="Saving">Saving</option>
             <option value="Investment">Investment</option>
             <option value="Other">Other</option>
@@ -133,7 +148,19 @@
         <label class="label">Split Expense?</label>
         <div class="control">
           <label class="checkbox">
-            <input id="split-expense" type="checkbox" name="Split Expense" value="Yes" /> Check if this was a split expense
+            <input id="split-expense" type="checkbox" name="Split Expense" value="Yes" onchange="calculateAndDisplay()" /> Check if this was a split expense
+          </label>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label">Who Paid?</label>
+        <div class="control">
+          <label class="radio">
+            <input type="radio" name="Payer" value="Matt" required /> Matt
+          </label>
+          <label class="radio">
+            <input type="radio" name="Payer" value="Katie" required /> Katie
           </label>
         </div>
       </div>
@@ -149,57 +176,6 @@
         </div>
       </div>
 
-      <!-- <div class="field">
-        <label class="label">Last Name</label>
-        <div class="control">
-          <input
-            class="input"
-            type="text"
-            placeholder="Your Last Name"
-            name="Last Name"
-          />
-        </div>
-      </div> -->
-
-      <!-- <div class="field">
-        <label class="label">Email</label>
-        <div class="control">
-          <input
-            class="input"
-            type="email"
-            placeholder="Your Email"
-            name="Email"
-          />
-        </div>
-      </div>  -->
-
-      <!--  <div class="field">
-        <label class="label">Password</label>
-        <div class="control">
-          <input
-            class="input"
-            type="password"
-            placeholder="Your Password"
-            name="Password"
-          />
-        </div>
-      </div> -->
-
-
-
-      <!--  <div class="field">
-        <label class="label">Gender</label>
-        <div class="control">
-          <label class="radio">
-            <input type="radio" name="Gender" value="male" /> Male
-          </label>
-          <label class="radio">
-            <input type="radio" name="Gender" value="female" /> Female
-          </label>
-        </div>
-      </div> -->
-
-
       <div class="field is-grouped">
         <div class="control">
           <button class="button is-primary" type="submit" id="submit-button">
@@ -207,7 +183,7 @@
           </button>
         </div>
         <div class="control">
-          <button class="button is-danger">Cancel</button>
+          <button class="button is-danger" type="button" onclick="document.getElementById('form').reset(); calculateAndDisplay();">Cancel</button>
         </div>
       </div>
     </form>
@@ -226,8 +202,14 @@
     ></div>
 
     <script>
-      
-      //get current date
+      // Global variable to store the latest EUR rate
+      let latestEurRate = 0;
+      // Store the original amount input by the user before any calculation
+      let originalAmountInput = 0;
+
+      // --- INITIALIZATION ---
+
+      // Set current date on load
       const datePicker = document.getElementById('datePicker');
       const today = new Date();
       const dd = String(today.getDate()).padStart(2, '0');
@@ -236,27 +218,139 @@
       const currentDate = `${yyyy}-${mm}-${dd}`;
       datePicker.value = currentDate;
       
+      // Fetch the EUR rate immediately on page load
+      getDatRate(); 
+
+      // --- NEW DISPLAY & CALCULATION LOGIC ---
+
+      const amountField = document.getElementById("amount");
+      const euroCheckbox = document.getElementById("euroCheckbox");
+      const splitCheckbox = document.getElementById("split-expense");
+
+      // Add event listener to re-calculate whenever the amount changes
+      amountField.addEventListener('input', calculateAndDisplay);
+
+      /**
+       * Updates the label for the amount field based on the EUR checkbox state.
+       */
+      function updateAmountLabel() {
+        const label = document.getElementById('amount-label');
+        if (euroCheckbox.checked) {
+            label.textContent = "EUR Value (To be converted to USD)";
+            // When checking the EUR box, recalculate immediately
+            if (latestEurRate === 0) {
+                getDatRate(); // Re-fetch if rate is missing
+            } else {
+                calculateAndDisplay();
+            }
+        } else {
+            label.textContent = "USD Value";
+            calculateAndDisplay();
+        }
+      }
+
+      /**
+       * Calculates the final USD amount (handling conversion and split)
+       * and updates the on-screen summary.
+       */
+      function calculateAndDisplay() {
+          const originalInput = parseFloat(amountField.value);
+          let finalUSD = originalInput;
+          let infoText = "";
+
+          // Validate input
+          if (isNaN(originalInput) || originalInput <= 0) {
+              document.getElementById("calculation-summary").style.display = "none";
+              return;
+          }
+
+          // 1. Handle EUR Conversion (if needed)
+          if (euroCheckbox.checked) {
+              if (latestEurRate > 0) {
+                  // The API provides the rate: 1 USD = X EUR.
+                  // To convert EUR to USD, we DIVIDE the EUR amount by the USD->EUR rate.
+                  finalUSD = originalInput / latestEurRate; 
+                  infoText += `(from €${originalInput.toFixed(2)} @ 1 USD = ${latestEurRate.toFixed(4)} EUR)`;
+              } else {
+                  console.warn("EUR rate not available yet or fetch failed.");
+                  // Display the original amount as a fallback if rate isn't ready
+                  document.getElementById("calculated-usd").textContent = "Fetching Rate...";
+                  document.getElementById("calculation-summary").style.display = "block";
+                  return; 
+              }
+          }
+
+          // Store the USD equivalent amount before potential splitting
+          originalAmountInput = finalUSD; 
+
+          // 2. Handle Split Expense (if needed)
+          // if (splitCheckbox.checked) {
+          //     finalUSD = finalUSD / 2;
+          //     infoText += (infoText ? ' | ' : '') + `(Split: / 2)`;
+          // }
+
+          // Update the display
+          document.getElementById("calculated-usd").textContent = finalUSD.toFixed(2);
+          document.getElementById("split-info").textContent = infoText;
+          document.getElementById("calculation-summary").style.display = "block";
+      }
+
+
+      // --- EUR RATE FETCH FUNCTION ---
+
+      // Function to fetch the EUR rate
+      async function getDatRate() {
+          const apiUrl = "https://open.er-api.com/v6/latest/USD";
+          try {
+              const response = await fetch(apiUrl);
+              if (!response.ok) {
+                  throw new Error(`API error: ${response.status}`);
+              }
+              const data = await response.json();
+              // Get the rate for EUR when USD is the base currency (1 USD = X EUR)
+              latestEurRate = data.rates.EUR; 
+              console.log("Fetched EUR Rate (1 USD =):", latestEurRate);
+              // After getting the rate, run the calculation to update the display
+              calculateAndDisplay(); 
+          } catch (error) {
+              console.error("Error fetching the EUR rate:", error);
+              latestEurRate = 0; // Reset or keep 0 if fetch fails
+              alert("Failed to fetch the EUR conversion rate. Please try again later.");
+          }
+      }
+
+
+      // --- FORM SUBMISSION LOGIC ---
+      
       document.getElementById("form").addEventListener("submit", async function (e) {
           e.preventDefault(); // Prevent the default form submission
+
+          // Set form state to submitting
           document.getElementById("message").textContent = "Submitting..";
           document.getElementById("message").style.display = "block";
+          document.getElementById("message").style.backgroundColor = "beige";
+          document.getElementById("message").style.color = "green";
           document.getElementById("submit-button").disabled = true;
 
-          const amountField = document.getElementById("amount");
-          const splitCheckbox = document.getElementById("split-expense");
-          const euroCheckbox = document.getElementById("euroCheckbox");
+          // Crucial Step: The 'amount' field must be updated with the FINAL calculated USD value
+          // before FormData is constructed, so the Google Script receives the correct value.
+          
+          // Note: We use the value calculated in `calculateAndDisplay` (originalAmountInput 
+          // before splitting, or the final value if no splitting is needed)
+          let finalValueToSend = originalAmountInput; 
+          // if (splitCheckbox.checked) {
+          //     finalValueToSend = finalValueToSend / 2;
+          // }
+          
+          // Create a hidden input to send the FINAL USD amount to the sheet
+          // The 'Original Value' field now just holds the user input (USD or EUR)
+          // We must manually add the calculated value to the data sent to the backend.
+          const finalUsdInput = document.createElement('input');
+          finalUsdInput.type = 'hidden';
+          finalUsdInput.name = 'Final USD Expense'; // Name for the Google Sheet column
+          finalUsdInput.value = finalValueToSend.toFixed(2);
+          this.appendChild(finalUsdInput);
 
-          let originalAmount = parseFloat(amountField.value);
-
-          // Handle split expense
-          if (splitCheckbox.checked) {
-              amountField.value = (originalAmount / 2).toFixed(2);
-          }
-
-          // Handle EUR conversion
-          if (euroCheckbox.checked) {
-              await getDatRate();
-          }
 
           // Proceed to construct FormData and make the POST request
           var formData = new FormData(this);
@@ -269,17 +363,20 @@
 
           // Send a POST request
           fetch(
-              "https://script.google.com/macros/s/AKfycbyZ936HVHDnBAl5efroVRT7CpQ5z4IU3d5V1-dQRxU8qSHgf9h1-RTJS-lJG6lKeqtTzQ/exec",
+              "https://script.google.com/macros/s/AKfycbywdFiaQvUU8idDmhBiTqu8-Ir5-nFl1LNbIKrBOnm4QuWLiixY4rDOCbM2ZV7It0oc/exec",
               {
                   redirect: "follow",
                   method: "POST",
                   body: formDataString,
                   headers: {
-                      "Content-Type": "text/plain;charset=utf-8",
+                      "Content-Type": "application/x-www-form-urlencoded",
+                      //"Content-Type": "text/plain;charset=utf-8",
                   },
               }
           )
               .then(function (response) {
+                  // Remove the temporary hidden input immediately after fetch preparation
+                  finalUsdInput.remove(); 
                   if (response) {
                       return response;
                   } else {
@@ -287,46 +384,28 @@
                   }
               })
               .then(function (data) {
+                  // Success message and form reset
                   document.getElementById("message").textContent =
                       "Data submitted successfully!";
-                  document.getElementById("message").style.display = "block";
                   document.getElementById("message").style.backgroundColor = "green";
                   document.getElementById("message").style.color = "beige";
                   document.getElementById("submit-button").disabled = false;
                   document.getElementById("form").reset();
+                  calculateAndDisplay(); // Clear the display
 
                   setTimeout(function () {
-                      document.getElementById("message").textContent = "";
                       document.getElementById("message").style.display = "none";
                   }, 2600);
               })
               .catch(function (error) {
+                  // Error handling
                   console.error(error);
                   document.getElementById("message").textContent =
                       "An error occurred while submitting the form.";
                   document.getElementById("message").style.display = "block";
+                  document.getElementById("submit-button").disabled = false;
               });
       });
-
-      // Function to fetch the EUR rate
-      async function getDatRate() {
-          const apiUrl = "https://open.er-api.com/v6/latest/USD";
-          try {
-              const response = await fetch(apiUrl);
-              if (!response.ok) {
-                  throw new Error(`API error: ${response.status}`);
-              }
-              const data = await response.json();
-              const eurRate = data.rates.EUR;
-
-              // Assign the EUR rate to the textbox value
-              const amountField = document.getElementById("amount");
-              amountField.value = ((amountField.value)/(eurRate.toFixed(6))).toFixed(2);
-          } catch (error) {
-              console.error("Error fetching the EUR rate:", error);
-              alert("Failed to fetch the EUR conversion rate.");
-          }
-      }
 
     </script>
   </body>
