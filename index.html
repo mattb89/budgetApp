@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>KAMACON Budget App</title>
+    <title>Matt's Kewl Budget App</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link
       rel="stylesheet"
@@ -187,6 +187,15 @@
         </div>
       </div>
     </form>
+
+    <!-- This is the table to display expenses -->
+    <div class="container m-4 pl-4">
+      <h2 class="title is-4">Recent Expenses</h2>
+      <div id="expenseTableContainer">
+        <p class="has-text-grey">Loading expenses...</p>
+      </div>
+    </div>
+
     <div
       id="message"
       style="
@@ -407,6 +416,97 @@
               });
       });
 
+    // ***** This is the logic for grabbing data from the google sheets ***** //
+    // Place this function inside your <script> tag in index.html
+
+    // Global function to receive the JSONP data
+    function handleExpensesData(data) {
+        const container = document.getElementById('expenseTableContainer');
+
+        if (!data || data.length === 0) {
+            container.innerHTML = '<p class="has-text-info">No expenses recorded yet.</p>';
+            return;
+        }
+
+        // We'll show the last 5 entries for a concise recent log
+        // Reverse the order so the newest are on top
+        const recentData = data.slice(-5).reverse(); 
+
+        // Define the headers you want to display
+        const relevantHeaders = ["Transaction Date", "Final USD Expense", "Category", "Payer"];
+        
+        // Start building the table HTML (using Bulma classes for style)
+        let tableHTML = '<table class="table is-fullwidth is-striped is-hoverable">';
+        
+        // 1. Table Header
+        tableHTML += '<thead><tr>';
+        relevantHeaders.forEach(header => {
+            tableHTML += `<th>${header}</th>`;
+        });
+        tableHTML += '</tr></thead>';
+
+        // 2. Table Body
+        tableHTML += '<tbody>';
+        recentData.forEach(row => {
+            tableHTML += '<tr>';
+            relevantHeaders.forEach(header => {
+                let cellValue = row[header];
+                
+                // Format the Date (Note: Google Scripts returns dates as objects or strings)
+                if (header === "Transaction Date" && cellValue) {
+                   // Safely format the date string
+                   const datePart = String(cellValue).split(' ')[0];
+                   cellValue = datePart;
+                }
+                
+                // Format the USD amount
+                if (header === "Final USD Expense" && cellValue) {
+                    cellValue = `$${parseFloat(cellValue).toFixed(2)}`;
+                }
+                
+                tableHTML += `<td>${cellValue || '-'}</td>`;
+            });
+            tableHTML += '</tr>';
+        });
+        tableHTML += '</tbody>';
+        tableHTML += '</table>';
+
+        container.innerHTML = tableHTML;
+        
+        // Clean up the temporary script element
+        document.getElementById('jsonpScript').remove(); 
+    }
+
+
+    // **NEW FUNCTION TO INITIATE JSONP REQUEST**
+    function fetchAndRenderExpenses() {
+        // IMPORTANT: Use your actual Google Script URL here
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbywdFiaQvUU8idDmhBiTqu8-Ir5-nFl1LNbIKrBOnm4QuWLiixY4rDOCbM2ZV7It0oc/exec"; 
+
+        // 1. Create the URL with the callback function name
+        // The script will call the 'handleExpensesData' function when it executes
+        const jsonpUrl = SCRIPT_URL + '?callback=handleExpensesData';
+
+        // 2. Create a new script element
+        const script = document.createElement('script');
+        script.id = 'jsonpScript';
+        script.src = jsonpUrl;
+        script.onerror = function() {
+            document.getElementById('expenseTableContainer').innerHTML = '<p class="has-text-danger">Failed to load expenses due to network/CORS issue.</p>';
+        };
+
+        // 3. Append the script element to the document to execute the request
+        document.head.appendChild(script);
+    }
+
+
+    // Ensure the fetch function runs when the page loads
+    fetchAndRenderExpenses();
+
+    // Also call this function in the success handler of your form submission 
+    // to refresh the table (within the .then(function (data) { ... } block)
+    // You will need to re-implement the new logic we used for the FINAL USD EXPENSE
+    // and Payer fields, as your current submit logic is from before those fixes.
     </script>
   </body>
 </html>
