@@ -1,7 +1,8 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Matt's Kewl Budget App</title>
+    <title>KAMACON Budget App</title>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link
       rel="stylesheet"
@@ -16,21 +17,28 @@
             font-size: 16px;
         }
         .hero.is-primary.is-bold {
-            padding: 1rem 1.5rem; /* Reduce padding */
+            padding: 1rem 1.0rem; /* Reduce padding */
         }
 
         .hero .hero-body {
-            padding: .5rem; /* Reduce padding in the hero body */
+            padding: .25rem; /* Reduce padding in the hero body */
         }
 
         .hero .title {
             font-size: 1.5rem; /* Reduce the font size of the title */
         }
 
-        .container {
+/*        .container {
             max-width: 1200px;
             margin: auto;
             padding: 1em;
+        }*/
+
+        /* Ensure the main container doesn't have forced width */
+        .container {
+            padding-left: 15px !important;
+            padding-right: 15px !important;
+            width: 100%;
         }
 
         .header {
@@ -67,9 +75,44 @@
             font-weight: bold;
         }
 
+        /* Ensure the grid doesn't overflow */
+        #categorySummary {
+            margin-left: -0.5rem;
+            margin-right: -0.5rem;
+        }
+
+        /* Tighten up the progress bar boxes for mobile */
+        .box {
+            border-radius: 6px;
+            box-shadow: 0 2px 3px rgba(10, 10, 10, 0.1);
+        }
+
+        .progress {
+            margin-bottom: 0.5rem !important;
+        }
+
+        /* Force the table to respect the screen width */
+        .table-container {
+            overflow-x: auto;
+            width: 100%;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Make cards look better on mobile */
+        .notification.category-card {
+            padding: 12px;
+            margin-bottom: 0px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        /* Adjust table text size for small screens */
         @media (max-width: 600px) {
-            .content {
-                flex-direction: column; /* Stack items vertically on small screens */
+            .table td, .table th {
+                padding: 0.5em 0.4em !important;
+                font-size: 0.8rem;
             }
         }
     </style>
@@ -130,16 +173,17 @@
         <div class="control">
           <select name="Category">
             <option value="">--Select a category--</option>
-            <option value="Food">Food</option>
-            <option value="Entertainment">Entertainment</option>
-            <option value="Travel">Travel (saving to travel)</option>
-            <option value="Shopping">Shopping</option>
-            <option value="Groceries">Groceries</option>
-            <option value="Gas">Gas</option>
-            <option value="Personal Care">Personal Care</option>
-            <option value="Saving">Saving</option>
-            <option value="Investment">Investment</option>
-            <option value="Other">Other</option>
+            <option value="Food">🍕 Food</option>
+            <option value="Gas">🚗 Gas</option>
+            <option value="Groceries">🛒 Groceries</option>
+            <option value="Personal Care">💇🏻 Personal Care</option>
+            <option value="Entertainment">🍿 Entertainment</option>
+            <option value="Funny Money">😜 Funny Money</option>
+            <option value="Travel">🌎 Travel (saving to travel)</option>
+            <option value="Shopping">🛍️ Shopping</option>
+            <option value="Saving">🏦 Saving</option>
+            <option value="Investment">📈 Investment</option>
+            <option value="Other">📥 Other</option>
           </select>
         </div>
       </div>
@@ -188,11 +232,19 @@
       </div>
     </form>
 
-    <!-- This is the table to display expenses -->
-    <div class="container m-4 pl-4">
+    <div class="container mt-4">
+      <h2 class="title is-4">Monthly Spending</h2>
+      <div id="categorySummary" class="columns is-mobile is-multiline">
+        <p class="column is-full has-text-grey">Calculating totals...</p>
+      </div>
+    </div>
+
+    <div class="container mt-4">
       <h2 class="title is-4">Recent Expenses</h2>
-      <div id="expenseTableContainer">
-        <p class="has-text-grey">Loading expenses...</p>
+      <div class="table-container">
+        <div id="expenseTableContainer">
+          <p class="has-text-grey">Loading expenses...</p>
+        </div>
       </div>
     </div>
 
@@ -419,62 +471,104 @@
     // ***** This is the logic for grabbing data from the google sheets ***** //
     // Place this function inside your <script> tag in index.html
 
-    // Global function to receive the JSONP data
     function handleExpensesData(data) {
-        const container = document.getElementById('expenseTableContainer');
+        console.log("Data received from Script:", data);
+        
+        const summaryContainer = document.getElementById('categorySummary');
+        const tableContainer = document.getElementById('expenseTableContainer');
 
-        if (!data || data.length === 0) {
-            container.innerHTML = '<p class="has-text-info">No expenses recorded yet.</p>';
+        // 1. Safety Check: Ensure data exists
+        if (!data || !data.expenses) {
+            tableContainer.innerHTML = '<p class="has-text-danger">Error: No expense data found.</p>';
             return;
         }
 
-        // We'll show the last 5 entries for a concise recent log
-        // Reverse the order so the newest are on top
-        const recentData = data.slice(-5).reverse(); 
+        const expenses = data.expenses;
+        const budgets = data.budgets || {};
 
-        // Define the headers you want to display
-        const relevantHeaders = ["Transaction Date", "Final USD Expense", "Category", "Payer"];
-        
-        // Start building the table HTML (using Bulma classes for style)
-        let tableHTML = '<table class="table is-fullwidth is-striped is-hoverable">';
-        
-        // 1. Table Header
-        tableHTML += '<thead><tr>';
-        relevantHeaders.forEach(header => {
-            tableHTML += `<th>${header}</th>`;
+        // 2. Calculate Actual Spending for the Current Month
+        const currentMonth = new Date().getMonth();
+        const currentYear = new Date().getFullYear();
+        const actuals = {};
+        let grandTotal = 0;
+
+        expenses.forEach(row => {
+            const date = new Date(row["Transaction Date"]);
+            if (date.getMonth() === currentMonth && date.getFullYear() === currentYear) {
+                // Clean category name (removes emojis for matching if necessary)
+                const cat = row["Category"] || "Other";
+                const amount = parseFloat(row["Final USD Expense"]) || 0;
+                actuals[cat] = (actuals[cat] || 0) + amount;
+                grandTotal += amount;
+            }
         });
-        tableHTML += '</tr></thead>';
 
-        // 2. Table Body
-        tableHTML += '<tbody>';
-        recentData.forEach(row => {
-            tableHTML += '<tr>';
-            relevantHeaders.forEach(header => {
-                let cellValue = row[header];
+        // 3. Render Progress Bars based on Budget Table
+        let summaryHTML = `
+            <div class="column is-12">
+                <div class="notification is-primary is-light p-3 mb-2">
+                    <p class="heading">Total Monthly Spend</p>
+                    <p class="title is-4">$${grandTotal.toFixed(2)}</p>
+                </div>
+            </div>`;
+
+        // Loop through categories found in your Google Sheet Budget table
+        const budgetCategories = Object.keys(budgets);
+        if (budgetCategories.length > 0) {
+            budgetCategories.forEach(cat => {
+                const spent = actuals[cat] || 0;
+                const limit = budgets[cat];
+                const percent = limit > 0 ? Math.min((spent / limit) * 100, 100) : 0;
                 
-                // Format the Date (Note: Google Scripts returns dates as objects or strings)
-                if (header === "Transaction Date" && cellValue) {
-                   // Safely format the date string
-                   const datePart = String(cellValue).split(' ')[0];
-                   cellValue = datePart;
-                }
-                
-                // Format the USD amount
-                if (header === "Final USD Expense" && cellValue) {
-                    cellValue = `$${parseFloat(cellValue).toFixed(2)}`;
-                }
-                
-                tableHTML += `<td>${cellValue || '-'}</td>`;
+                let barColor = "is-primary"; 
+                if (percent > 80) barColor = "is-warning";
+                if (percent >= 100) barColor = "is-danger";
+
+                summaryHTML += `
+                    <div class="column is-12-mobile is-6-tablet">
+                        <div class="box p-3 mb-0">
+                            <div class="is-flex is-justify-content-between is-size-7 mb-1">
+                                <span class="has-text-weight-bold">${cat} </span>
+                                <span>$${spent.toFixed(0)} / $${limit}</span>
+                            </div>
+                            <progress class="progress ${barColor} is-small" value="${spent}" max="${limit}">
+                                ${percent}%
+                            </progress>
+                        </div>
+                    </div>`;
             });
-            tableHTML += '</tr>';
-        });
-        tableHTML += '</tbody>';
-        tableHTML += '</table>';
+        } else {
+            summaryHTML += `<p class="column is-full has-text-grey is-size-7">No budget limits found for this month.</p>`;
+        }
+        summaryContainer.innerHTML = summaryHTML;
 
-        container.innerHTML = tableHTML;
+        // 4. Render Recent Expenses Table
+        const recentData = expenses.slice(-5).reverse(); 
+        const headers = ["Date", "Amount", "Category", "Who"]; 
         
-        // Clean up the temporary script element
-        document.getElementById('jsonpScript').remove(); 
+        let tableHTML = '<table class="table is-fullwidth is-striped is-narrow is-hoverable">';
+        tableHTML += '<thead><tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr></thead><tbody>';
+
+        recentData.forEach(row => {
+            // Formating: Date (MM-DD), Amount ($), Category (Icon only), Payer (Initial)
+            const displayDate = String(row["Transaction Date"]).split('T')[0].slice(5);
+            const displayCat = row["Category"] ? row["Category"].split(' ')[0] : '-';
+            const displayPayer = row["Payer"] === 'Matt' ? 'M' : 'K';
+
+            tableHTML += `<tr>
+                <td class="is-size-7" style="white-space: nowrap;">${displayDate}</td>
+                <td class="is-size-7">$${parseFloat(row["Final USD Expense"]).toFixed(2)}</td>
+                <td class="is-size-7">${displayCat}</td>
+                <td class="is-size-7">${displayPayer}</td>
+            </tr>`;
+        });
+        tableHTML += '</tbody></table>';
+
+        tableContainer.innerHTML = tableHTML;
+
+        // Cleanup script tag
+        const oldScript = document.getElementById('jsonpScript');
+        if(oldScript) oldScript.remove(); 
     }
 
 
