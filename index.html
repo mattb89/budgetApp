@@ -28,12 +28,6 @@
             font-size: 1.5rem; /* Reduce the font size of the title */
         }
 
-/*        .container {
-            max-width: 1200px;
-            margin: auto;
-            padding: 1em;
-        }*/
-
         /* Ensure the main container doesn't have forced width */
         .container {
             padding-left: 15px !important;
@@ -75,14 +69,36 @@
             font-weight: bold;
         }
 
-        /* Ensure the grid doesn't overflow */
+        /* Fix for overflowing category boxes */
         #categorySummary {
-            margin-left: -0.5rem;
-            margin-right: -0.5rem;
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+            width: 100%;
+        }
+
+        /* Ensure the drawer allows internal scrolling for the notes table */
+        .category-details {
+            overflow-x: auto; /* Allows the table to slide left/right inside the box */
+            width: 100%;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .category-details thead th {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            background-color: #eeeeee;
+            border-bottom: 2px solid #dbdbdb;
+        }
+
+        /* Force the table to not exceed the box width unless scrolling */
+        .category-details table {
+            min-width: 400px; /* Ensures the headers don't squish too much */
         }
 
         /* Tighten up the progress bar boxes for mobile */
         .box {
+            transition: background-color 0.2s;
             border-radius: 6px;
             box-shadow: 0 2px 3px rgba(10, 10, 10, 0.1);
         }
@@ -109,10 +125,17 @@
         }
 
         /* Adjust table text size for small screens */
-        @media (max-width: 600px) {
+/*        @media (max-width: 600px) {
             .table td, .table th {
                 padding: 0.5em 0.4em !important;
                 font-size: 0.8rem;
+            }
+        }*/
+
+        /* Tighten padding for mobile so bars don't feel "fat" */
+        @media (max-width: 600px) {
+            .box {
+                padding: 0.75rem !important;
             }
         }
     </style>
@@ -263,6 +286,7 @@
     ></div>
 
     <script>
+      let allExpenses = [];
       // Global variable to store the latest EUR rate
       let latestEurRate = 0;
       // Store the original amount input by the user before any calculation
@@ -484,6 +508,7 @@
         }
 
         const expenses = data.expenses;
+        allExpenses = data.expenses;
         const budgets = data.budgets || {};
 
         // 2. Calculate Actual Spending for the Current Month
@@ -525,17 +550,20 @@
                 if (percent >= 100) barColor = "is-danger";
 
                 summaryHTML += `
-                    <div class="column is-12-mobile is-6-tablet">
-                        <div class="box p-3 mb-0">
-                            <div class="is-flex is-justify-content-between is-size-7 mb-1">
-                                <span class="has-text-weight-bold">${cat} </span>
-                                <span>$${spent.toFixed(0)} / $${limit}</span>
-                            </div>
-                            <progress class="progress ${barColor} is-small" value="${spent}" max="${limit}">
-                                ${percent}%
-                            </progress>
-                        </div>
-                    </div>`;
+                  <div class="column is-12-mobile is-12-tablet">
+                      <div class="box p-3 mb-2" onclick="toggleCategoryDetails('${cat}')" style="cursor: pointer;">
+                          <div class="is-flex is-justify-content-between is-size-7 mb-1">
+                              <span class="has-text-weight-bold">${cat}</span>
+                              <span>$${spent.toFixed(2)} / $${limit}</span>
+                          </div>
+                          <progress class="progress ${barColor} is-small" value="${spent}" max="${limit}">
+                              ${percent}%
+                          </progress>
+                          <div id="details-${cat}" class="category-details" style="display: none; margin-top: 10px; border-top: 1px solid #eee; padding-top: 10px;">
+                              <p class="is-size-7 has-text-grey">Loading transactions...</p>
+                          </div>
+                      </div>
+                  </div>`;
             });
         } else {
             summaryHTML += `<p class="column is-full has-text-grey is-size-7">No budget limits found for this month.</p>`;
@@ -571,6 +599,68 @@
         if(oldScript) oldScript.remove(); 
     }
 
+    // **** FUNCTION: ADDS THE TOGGLE FUNCTIONALITY OF THE CATEGORIES ****
+    function toggleCategoryDetails(category) {
+        const detailsDiv = document.getElementById(`details-${category}`);
+        
+        // 1. Toggle visibility
+        if (detailsDiv.style.display === 'block') {
+            detailsDiv.style.display = 'none';
+            return;
+        }
+
+        // 2. Filter logic for current month and category
+        const currentMonth = new Date().getMonth();
+        const currentYear = new Date().getFullYear();
+
+        const filtered = allExpenses.filter(row => {
+            const date = new Date(row["Transaction Date"]);
+            const isThisMonth = date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+            const isThisCategory = row["Category"] === category;
+            return isThisMonth && isThisCategory;
+        }).reverse();
+
+        // 3. Build Table with specified headers
+        if (filtered.length === 0) {
+            detailsDiv.innerHTML = `<p class="is-size-7 has-text-grey p-2 italic">No transactions found for ${category}.</p>`;
+        } else {
+            let listHtml = `
+                <table class="table is-fullwidth is-narrow is-striped mb-0">
+                    <thead>
+                        <tr style="background-color: #eeeeee;">
+                            <th class="is-size-7" style="width: 15%;">Date</th>
+                            <th class="is-size-7" style="width: 20%;">Amt</th>
+                            <th class="is-size-7" style="width: 10%;">Who</th>
+                            <th class="is-size-7" style="width: 55%;">Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+
+            filtered.forEach(row => {
+                const d = new Date(row["Transaction Date"]);
+                const displayDate = (d.getMonth() + 1) + "/" + d.getDate();
+                const amount = parseFloat(row["Final USD Expense"]) || 0;
+                const payerInit = row["Payer"] === 'Matt' ? 'M' : 'K';
+                // Access the 'Notes' header from your "All Expenses" sheet
+                const notes = row["Notes"] || "-"; 
+
+                listHtml += `
+                    <tr>
+                        <td class="is-size-7" style="white-space: nowrap;">${displayDate}</td>
+                        <td class="is-size-7 has-text-weight-bold">$${amount.toFixed(2)}</td>
+                        <td class="is-size-7">${payerInit}</td>
+                        <td class="is-size-7 italic" style="word-break: break-word; min-width: 100px;">${notes}</td>
+                    </tr>`;
+            });
+
+            listHtml += '</tbody></table>';
+            detailsDiv.innerHTML = listHtml;
+        }
+
+        detailsDiv.style.display = 'block';
+    }
+
+    // **** END OF THE TOGGLE FUNCTION ****
 
     // **NEW FUNCTION TO INITIATE JSONP REQUEST**
     function fetchAndRenderExpenses() {
