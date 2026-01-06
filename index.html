@@ -638,8 +638,9 @@
 
             filtered.forEach(row => {
                 const d = new Date(row["Transaction Date"]);
-                const displayDate = (d.getMonth() + 1) + "/" + d.getDate();
-                const amount = parseFloat(row["Final USD Expense"]) || 0;
+                //const displayDate = (d.getMonth() + 1) + "/" + d.getDate();
+              const displayDate = (d.getUTCMonth() + 1) + "/" + d.getUTCDate();  
+              const amount = parseFloat(row["Final USD Expense"]) || 0;
                 const payerInit = row["Payer"] === 'Matt' ? 'M' : 'K';
                 // Access the 'Notes' header from your "All Expenses" sheet
                 const notes = row["Notes"] || "-"; 
