@@ -144,10 +144,37 @@
     <section class="hero is-primary is-bold">
       <div class="hero-body">
         <div class="container">
+          <h1 class="title">KAMACON Budget</h1>
+        </div>
+      </div>
+      <div class="hero-foot">
+        <nav class="tabs is-boxed is-fullwidth">
+          <div class="container">
+            <ul>
+              <li class="is-active">
+                <a href="index.html">
+                  <span class="icon is-small">📝</span>
+                  <span>Entry Form</span>
+                </a>
+              </li>
+              <li>
+                <a href="filter.html">
+                  <span class="icon is-small">📊</span>
+                  <span>Analytics</span>
+                </a>
+              </li>
+            </ul>
+          </div>
+        </nav>
+      </div>
+    </section>
+<!--     <section class="hero is-primary is-bold">
+      <div class="hero-body">
+        <div class="container">
           <h1 class="title">Expense Entry Form</h1>
         </div>
       </div>
-    </section>
+    </section> -->
     <form id="form" class="container m-4 pl-4" method="POST">
       <div class="field">
         <label class="label">Date of Transaction</label>
@@ -201,8 +228,7 @@
             <option value="Groceries">🛒 Groceries</option>
             <option value="Personal Care">💇🏻 Personal Care</option>
             <option value="Entertainment">🍿 Entertainment</option>
-            <option value="K Funny Money">💁🏻‍♀️ K Funny Money</option>
-            <option value="M Funny Money">😜 M Funny Money</option>
+            <option value="Funny Money">😜 Funny Money</option>
             <option value="Travel">🌎 Travel (saving to travel)</option>
             <option value="Shopping">🛍️ Shopping</option>
             <option value="Saving">🏦 Saving</option>
@@ -639,9 +665,8 @@
 
             filtered.forEach(row => {
                 const d = new Date(row["Transaction Date"]);
-                //const displayDate = (d.getMonth() + 1) + "/" + d.getDate();
-              const displayDate = (d.getUTCMonth() + 1) + "/" + d.getUTCDate();  
-              const amount = parseFloat(row["Final USD Expense"]) || 0;
+                const displayDate = (d.getMonth() + 1) + "/" + d.getDate();
+                const amount = parseFloat(row["Final USD Expense"]) || 0;
                 const payerInit = row["Payer"] === 'Matt' ? 'M' : 'K';
                 // Access the 'Notes' header from your "All Expenses" sheet
                 const notes = row["Notes"] || "-"; 
