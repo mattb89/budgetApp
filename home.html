@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Upgrade & Mortgage Dashboard</title>
+    <style>
+        :root { --primary: #2c3e50; --secondary: #34495e; --accent: #3498db; --bg: #f4f7f6; --success: #27ae60; --warning: #e67e22; --danger: #e74c3c; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 1300px; margin: 0 auto; }
+        header { text-align: center; margin-bottom: 30px; }
+        .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 40px; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); position: relative; }
+        h2 { border-bottom: 2px solid var(--accent); padding-bottom: 10px; color: var(--primary); margin-top: 0; }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 0.85em; color: #555; }
+        input[type="number"], input[type="text"] { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        
+        .upgrade-list { max-height: 400px; overflow-y: auto; margin-bottom: 10px; border: 1px solid #eee; padding: 10px; border-radius: 4px; }
+        .upgrade-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; background: #fafafa; padding: 5px; border-radius: 4px; }
+        .upgrade-name { flex: 2; }
+        .upgrade-price { flex: 1; }
+        .btn-del { background: none; border: none; color: var(--danger); cursor: pointer; font-weight: bold; }
+        
+        .totals-section { margin-top: 15px; padding: 15px; background: #e8f4fd; border-radius: 4px; border-left: 4px solid var(--accent); }
+        .discount-box { background: #fff3e0; padding: 12px; border-radius: 4px; margin-top: 10px; border-left: 4px solid var(--warning); }
+        .savings-badge { color: var(--success); font-weight: bold; font-size: 0.9em; margin-top: 5px; display: block; }
+        
+        .toolbar { display: flex; gap: 10px; margin-bottom: 20px; justify-content: center; }
+        .btn { padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; color: white; transition: 0.2s; font-size: 0.9em; }
+        .btn-add { background: var(--secondary); margin-bottom: 10px; }
+        .btn-save-preset { background: var(--primary); width: 100%; margin-top: 10px; }
+        .btn-export { background: var(--success); }
+        .btn-import { background: var(--warning); }
+        
+        .global-settings { background: var(--primary); color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 20px; }
+        .global-settings input { background: #34495e; color: white; border: 1px solid #555; }
+        
+        .metric { font-size: 1.3em; font-weight: bold; color: var(--primary); }
+        .small-label { font-size: 0.75em; color: #666; text-transform: uppercase; }
+        
+        .presets-section { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th { text-align: left; background: #f8f9fa; padding: 12px; border-bottom: 2px solid #eee; }
+        td { padding: 12px; border-bottom: 1px solid #eee; }
+        #fileInput { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Home Upgrade & Mortgage Dashboard</h1>
+        <div class="toolbar">
+            <button class="btn btn-export" onclick="exportConfig()">Export Data</button>
+            <button class="btn btn-import" onclick="document.getElementById('fileInput').click()">Import Data</button>
+            <input type="file" id="fileInput" accept=".json" onchange="importConfig(event)">
+        </div>
+    </header>
+
+    <div class="global-settings">
+        <div><label>Interest Rate (%)</label><input type="number" id="globalRate" value="6.5" step="0.1" oninput="updateAll()"></div>
+        <div><label>Term (Years)</label><input type="number" id="globalTerm" value="30" oninput="updateAll()"></div>
+        <div><label>Tax Rate (%)</label><input type="number" id="globalTax" value="2.3" step="0.1" oninput="updateAll()"></div>
+        <div><label>Annual Ins ($)</label><input type="number" id="globalIns" value="2500" oninput="updateAll()"></div>
+    </div>
+
+    <div class="dashboard-grid">
+        <div class="card" id="card-slot1">
+            <h2 id="title-slot1">Slot 1</h2>
+            <div class="input-group">
+                <label>Base Price ($)</label>
+                <input type="number" id="base-slot1" oninput="syncState('slot1')">
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3>Upgrades</h3>
+                <button class="btn btn-add" style="padding: 5px 10px;" onclick="addUpgrade('slot1')">+ Add</button>
+            </div>
+            <div id="upgrades-slot1" class="upgrade-list"></div>
+
+            <div class="discount-box">
+                <label>Upgrade Discount (%)</label>
+                <input type="number" id="discount-pct-slot1" placeholder="e.g. 10" oninput="syncState('slot1')">
+                <span class="savings-badge" id="savings-amt-slot1">Savings: $0.00</span>
+            </div>
+
+            <div class="totals-section">
+                <div class="small-label">Adjusted Upgrade Total</div>
+                <div id="up-total-slot1" style="font-weight: bold;">$0.00</div>
+                <div class="small-label">Final Home Price</div>
+                <div class="metric" id="total-slot1">$0.00</div>
+            </div>
+
+            <div class="input-group" style="margin-top:15px;">
+                <label>Down Payment ($)</label>
+                <input type="number" id="down-slot1" oninput="syncState('slot1')">
+            </div>
+            <div class="small-label">Monthly Payment</div>
+            <div class="metric" id="monthly-slot1">$0.00</div>
+            <button class="btn btn-save-preset" onclick="promptSave('slot1')">Save Configuration</button>
+        </div>
+
+        <div class="card" id="card-slot2">
+            <h2 id="title-slot2">Slot 2</h2>
+            <div class="input-group">
+                <label>Base Price ($)</label>
+                <input type="number" id="base-slot2" oninput="syncState('slot2')">
+            </div>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3>Upgrades</h3>
+                <button class="btn btn-add" style="padding: 5px 10px;" onclick="addUpgrade('slot2')">+ Add</button>
+            </div>
+            <div id="upgrades-slot2" class="upgrade-list"></div>
+
+            <div class="discount-box">
+                <label>Upgrade Discount (%)</label>
+                <input type="number" id="discount-pct-slot2" placeholder="e.g. 10" oninput="syncState('slot2')">
+                <span class="savings-badge" id="savings-amt-slot2">Savings: $0.00</span>
+            </div>
+
+            <div class="totals-section">
+                <div class="small-label">Adjusted Upgrade Total</div>
+                <div id="up-total-slot2" style="font-weight: bold;">$0.00</div>
+                <div class="small-label">Final Home Price</div>
+                <div class="metric" id="total-slot2">$0.00</div>
+            </div>
+
+            <div class="input-group" style="margin-top:15px;">
+                <label>Down Payment ($)</label>
+                <input type="number" id="down-slot2" oninput="syncState('slot2')">
+            </div>
+            <div class="small-label">Monthly Payment</div>
+            <div class="metric" id="monthly-slot2">$0.00</div>
+            <button class="btn btn-save-preset" onclick="promptSave('slot2')">Save Configuration</button>
+        </div>
+    </div>
+
+    <div class="presets-section">
+        <h2>Saved History & Presets</h2>
+        <table id="presetsTable">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Total Price</th>
+                    <th>Monthly</th>
+                    <th>Notes</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="presetsBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+const defaultData = {
+    slot1: { name: "Kennedale", base: 399990, discountPct: 0, down: 80000, upgrades: [
+        {name: "Lot 34", price: 7000, selected: true}, {name: "Sliding Door", price: 8600, selected: true}
+    ]},
+    slot2: { name: "Yorktown", base: 359990, discountPct: 0, down: 72000, upgrades: [
+        {name: "Bay Window", price: 6070, selected: true}, {name: "TX Covered Patio", price: 12352, selected: true}
+    ]}
+};
+
+let activeSlots = JSON.parse(localStorage.getItem('activeSlots')) || defaultData;
+let savedPresets = JSON.parse(localStorage.getItem('savedPresets')) || [];
+
+function init() {
+    renderSlot('slot1'); renderSlot('slot2');
+    renderPresets(); updateAll();
+}
+
+function renderSlot(slotId) {
+    const data = activeSlots[slotId];
+    document.getElementById(`title-${slotId}`).innerText = data.name;
+    document.getElementById(`base-${slotId}`).value = data.base;
+    document.getElementById(`discount-pct-${slotId}`).value = data.discountPct || 0;
+    document.getElementById(`down-${slotId}`).value = data.down;
+
+    const container = document.getElementById(`upgrades-${slotId}`);
+    container.innerHTML = '';
+    data.upgrades.forEach((u, idx) => {
+        const row = document.createElement('div');
+        row.className = 'upgrade-row';
+        row.innerHTML = `
+            <input type="checkbox" ${u.selected ? 'checked' : ''} onchange="toggleUpgrade('${slotId}', ${idx})">
+            <input type="text" class="upgrade-name" value="${u.name}" oninput="updateUpgrade('${slotId}', ${idx}, 'name', this.value)">
+            <input type="number" class="upgrade-price" value="${u.price}" oninput="updateUpgrade('${slotId}', ${idx}, 'price', this.value)">
+            <button class="btn-del" onclick="deleteUpgrade('${slotId}', ${idx})">✕</button>
+        `;
+        container.appendChild(row);
+    });
+}
+
+function addUpgrade(slotId) {
+    activeSlots[slotId].upgrades.push({ name: "New Item", price: 0, selected: true });
+    renderSlot(slotId); updateAll();
+}
+
+function deleteUpgrade(slotId, idx) {
+    activeSlots[slotId].upgrades.splice(idx, 1);
+    renderSlot(slotId); updateAll();
+}
+
+function toggleUpgrade(slotId, idx) {
+    activeSlots[slotId].upgrades[idx].selected = !activeSlots[slotId].upgrades[idx].selected;
+    updateAll();
+}
+
+function updateUpgrade(slotId, idx, field, val) {
+    activeSlots[slotId].upgrades[idx][field] = field === 'price' ? parseFloat(val) || 0 : val;
+    updateAll();
+}
+
+function syncState(slotId) {
+    activeSlots[slotId].base = parseFloat(document.getElementById(`base-${slotId}`).value) || 0;
+    activeSlots[slotId].discountPct = parseFloat(document.getElementById(`discount-pct-${slotId}`).value) || 0;
+    activeSlots[slotId].down = parseFloat(document.getElementById(`down-${slotId}`).value) || 0;
+    updateAll();
+}
+
+function updateAll() {
+    ['slot1', 'slot2'].forEach(slotId => {
+        const data = activeSlots[slotId];
+        const rawUpgradeTotal = data.upgrades.filter(u => u.selected).reduce((sum, u) => sum + u.price, 0);
+        
+        // Calculate Discount logic
+        const discountAmount = (data.discountPct / 100) * rawUpgradeTotal;
+        const finalUpgradeTotal = Math.max(0, rawUpgradeTotal - discountAmount);
+        const totalPrice = data.base + finalUpgradeTotal;
+        
+        document.getElementById(`savings-amt-${slotId}`).innerText = `Savings: ${formatCurrency(discountAmount)}`;
+        document.getElementById(`up-total-${slotId}`).innerText = formatCurrency(finalUpgradeTotal);
+        document.getElementById(`total-${slotId}`).innerText = formatCurrency(totalPrice);
+        document.getElementById(`monthly-${slotId}`).innerText = formatCurrency(calculateMortgage(totalPrice, data.down));
+    });
+    localStorage.setItem('activeSlots', JSON.stringify(activeSlots));
+}
+
+function calculateMortgage(total, down) {
+    const principal = total - down;
+    if (principal <= 0) return 0;
+    const rate = (parseFloat(document.getElementById('globalRate').value) / 100) / 12;
+    const term = parseFloat(document.getElementById('globalTerm').value) * 12;
+    const taxRate = parseFloat(document.getElementById('globalTax').value) / 100;
+    const monthlyIns = parseFloat(document.getElementById('globalIns').value) / 12;
+    const pi = rate > 0 ? (principal * (rate * Math.pow(1 + rate, term)) / (Math.pow(1 + rate, term) - 1)) : (principal / term);
+    return pi + (total * taxRate / 12) + monthlyIns;
+}
+
+function formatCurrency(num) { return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(num); }
+
+function promptSave(slotId) {
+    const name = prompt("Name for this configuration?", activeSlots[slotId].name);
+    if (!name) return;
+    const notes = prompt("Notes:");
+    const data = activeSlots[slotId];
+    const upSum = data.upgrades.filter(u => u.selected).reduce((sum, u) => sum + u.price, 0);
+    const finalPrice = data.base + (upSum * (1 - (data.discountPct/100)));
+    
+    savedPresets.push({
+        id: Date.now(), configName: name, notes: notes || "", totalPrice: finalPrice,
+        monthly: calculateMortgage(finalPrice, data.down),
+        data: JSON.parse(JSON.stringify({...data, name}))
+    });
+    localStorage.setItem('savedPresets', JSON.stringify(savedPresets));
+    renderPresets();
+}
+
+function renderPresets() {
+    const body = document.getElementById('presetsBody');
+    body.innerHTML = '';
+    savedPresets.forEach(p => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><strong>${p.configName}</strong></td>
+            <td>${formatCurrency(p.totalPrice)}</td>
+            <td>${formatCurrency(p.monthly)}</td>
+            <td><small>${p.notes}</small></td>
+            <td>
+                <button class="btn" style="background:var(--accent);padding:4px 8px" onclick="loadInto('slot1', ${p.id})">L-Slot 1</button>
+                <button class="btn" style="background:var(--accent);padding:4px 8px" onclick="loadInto('slot2', ${p.id})">L-Slot 2</button>
+                <button class="btn" style="background:var(--danger);padding:4px 8px" onclick="removePreset(${p.id})">✕</button>
+            </td>
+        `;
+        body.appendChild(row);
+    });
+}
+
+function loadInto(slotId, id) {
+    const p = savedPresets.find(x => x.id === id);
+    if (p) { activeSlots[slotId] = JSON.parse(JSON.stringify(p.data)); renderSlot(slotId); updateAll(); }
+}
+
+function removePreset(id) {
+    savedPresets = savedPresets.filter(x => x.id !== id);
+    localStorage.setItem('savedPresets', JSON.stringify(savedPresets)); renderPresets();
+}
+
+function exportConfig() {
+    const blob = new Blob([JSON.stringify({ activeSlots, savedPresets, globals: {
+        rate: document.getElementById('globalRate').value, term: document.getElementById('globalTerm').value,
+        tax: document.getElementById('globalTax').value, ins: document.getElementById('globalIns').value
+    }})], {type: "application/json"});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = "home_data.json"; a.click();
+}
+
+function importConfig(event) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const d = JSON.parse(e.target.result);
+        activeSlots = d.activeSlots; savedPresets = d.savedPresets;
+        document.getElementById('globalRate').value = d.globals.rate;
+        document.getElementById('globalTerm').value = d.globals.term;
+        document.getElementById('globalTax').value = d.globals.tax;
+        document.getElementById('globalIns').value = d.globals.ins;
+        init();
+    };
+    reader.readAsText(event.target.files[0]);
+}
+
+init();
+</script>
+</body>
+</html>
