@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>KAMACON Budget App</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css"
+    />
+    <style>
+        /* Existing CSS for layout */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            font-size: 16px;
+        }
+        .hero.is-primary.is-bold {
+            padding: 1rem 1.0rem; /* Reduce padding */
+        }
+
+        .hero .hero-body {
+            padding: .25rem; /* Reduce padding in the hero body */
+        }
+
+        .hero .title {
+            font-size: 1.5rem; /* Reduce the font size of the title */
+        }
+
+        /* Ensure the main container doesn't have forced width */
+        .container {
+            padding-left: 15px !important;
+            padding-right: 15px !important;
+            width: 100%;
+        }
+
+        .header {
+            text-align: center;
+            padding: 1em 0;
+            background-color: #f3f3f3;
+        }
+
+        .content {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+
+        .item {
+            flex: 1 1 300px; /* Adjusts the size of the item */
+            margin: 0.5em;
+            padding: 1em;
+            background-color: #ffffff;
+            border: 1px solid #dddddd;
+            border-radius: 5px;
+            font-size: 1.2em;
+        }
+        .label {
+            font-size: 25px;
+        }
+        /* New CSS for calculation display */
+        #calculation-summary {
+            margin-top: 15px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: #f9f9f9;
+            font-weight: bold;
+        }
+
+        /* Fix for overflowing category boxes */
+        #categorySummary {
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+            width: 100%;
+        }
+
+        /* Ensure the drawer allows internal scrolling for the notes table */
+        .category-details {
+            overflow-x: auto; /* Allows the table to slide left/right inside the box */
+            width: 100%;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .category-details thead th {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            background-color: #eeeeee;
+            border-bottom: 2px solid #dbdbdb;
+        }
+
+        /* Force the table to not exceed the box width unless scrolling */
+        .category-details table {
+            min-width: 400px; /* Ensures the headers don't squish too much */
+        }
+
+        /* Tighten up the progress bar boxes for mobile */
+        .box {
+            transition: background-color 0.2s;
+            border-radius: 6px;
+            box-shadow: 0 2px 3px rgba(10, 10, 10, 0.1);
+        }
+
+        .progress {
+            margin-bottom: 0.5rem !important;
+        }
+
+        /* Force the table to respect the screen width */
+        .table-container {
+            overflow-x: auto;
+            width: 100%;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Make cards look better on mobile */
+        .notification.category-card {
+            padding: 12px;
+            margin-bottom: 0px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        /* Adjust table text size for small screens */
+/*        @media (max-width: 600px) {
+            .table td, .table th {
+                padding: 0.5em 0.4em !important;
+                font-size: 0.8rem;
+            }
+        }*/
+
+        /* Tighten padding for mobile so bars don't feel "fat" */
+        @media (max-width: 600px) {
+            .box {
+                padding: 0.75rem !important;
+            }
+        }
+    </style>
+  </head>
+  <body>
+    <section class="hero is-primary is-bold">
+      <div class="hero-body">
+        <div class="container">
+          <h1 class="title">KAMACON Budget</h1>
+        </div>
+      </div>
+      <div class="hero-foot">
+        <nav class="tabs is-boxed is-fullwidth">
+          <div class="container">
+            <ul>
+              <li class="is-active">
+                <a href="index.html">
+                  <span class="icon is-small">📝</span>
+                  <span>Entry Form</span>
+                </a>
+              </li>
+              <li>
+                <a href="filter.html">
+                  <span class="icon is-small">📊</span>
+                  <span>Analytics</span>
+                </a>
+              </li>
+            </ul>
+          </div>
+        </nav>
+      </div>
+    </section>
+<!--     <section class="hero is-primary is-bold">
+      <div class="hero-body">
+        <div class="container">
+          <h1 class="title">Expense Entry Form</h1>
+        </div>
+      </div>
+    </section> -->
+    <form id="form" class="container m-4 pl-4" method="POST">
+      <div class="field">
+        <label class="label">Date of Transaction</label>
+        <div class="control">
+          <input
+            id="datePicker"
+            class="input"
+            type="date"
+            placeholder="Enter Date"
+            name="Transaction Date"
+          />
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label" id="amount-label">USD Value</label>
+        <div class="control">
+          <input
+            id="amount"
+            class="input"
+            type="text"
+            inputmode="decimal"
+            placeholder="Enter Value"
+            step="any"
+            min="0.00"
+            name="Original Value" />
+        </div>
+      </div>
+
+      <div class="field">
+        <div class="control">
+          <label class="checkbox">
+            <input id="euroCheckbox" type="checkbox" name="EUR Entry" value="Yes" onchange="updateAmountLabel()" /> EUR
+          </label>
+        </div>
+      </div>
+
+      <div id="calculation-summary" style="display: none;">
+          <p>
+              Calculated USD Expense: $<span id="calculated-usd">0.00</span>
+              <span id="split-info" style="font-weight: normal; font-size: 0.8em;"></span>
+          </p>
+      </div>
+      <div class="field">
+        <label class="label">Category</label>
+        <div class="control">
+          <select name="Category">
+            <option value="">--Select a category--</option>
+            <option value="Food">🍕 Food</option>
+            <option value="Gas">🚗 Gas</option>
+            <option value="Groceries">🛒 Groceries</option>
+            <option value="Personal Care">💇🏻 Personal Care</option>
+            <option value="Entertainment">🍿 Entertainment</option>
+            <option value="Funny Money">😜 Funny Money</option>
+            <option value="Travel">🌎 Travel (saving to travel)</option>
+            <option value="Shopping">🛍️ Shopping</option>
+            <option value="Saving">🏦 Saving</option>
+            <option value="Investment">📈 Investment</option>
+            <option value="Other">📥 Other</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label">Split Expense?</label>
+        <div class="control">
+          <label class="checkbox">
+            <input id="split-expense" type="checkbox" name="Split Expense" value="Yes" onchange="calculateAndDisplay()" /> Check if this was a split expense
+          </label>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label">Who Paid?</label>
+        <div class="control">
+          <label class="radio">
+            <input type="radio" name="Payer" value="Matt" required /> Matt
+          </label>
+          <label class="radio">
+            <input type="radio" name="Payer" value="Katie" required /> Katie
+          </label>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label">Additional Information</label>
+        <div class="control">
+          <textarea
+            class="textarea"
+            placeholder="Any additional information"
+            name="Notes"
+          ></textarea>
+        </div>
+      </div>
+
+      <div class="field is-grouped">
+        <div class="control">
+          <button class="button is-primary" type="submit" id="submit-button">
+            Submit
+          </button>
+        </div>
+        <div class="control">
+          <button class="button is-danger" type="button" onclick="document.getElementById('form').reset(); calculateAndDisplay();">Cancel</button>
+        </div>
+      </div>
+    </form>
+
+    <div class="container mt-4">
+      <div class="is-flex is-justify-content-between is-align-items-center mb-3">
+        <h2 class="title is-4 mb-0" id="monthDisplay">Monthly Spending</h2>
+        <div class="field has-addons">
+          <p class="control"><button class="button is-small is-primary is-outlined" onclick="changeMonth(-1)">←</button></p>
+          <p class="control"><button class="button is-small is-primary is-outlined" onclick="goToToday()">Today</button></p>
+          <p class="control"><button class="button is-small is-primary is-outlined" onclick="changeMonth(1)">→</button></p>
+        </div>
+      </div>
+      <div id="categorySummary" class="columns is-mobile is-multiline">
+        <p class="column is-full has-text-grey">Calculating totals...</p>
+      </div>
+    </div>
+
+    <div class="container mt-4">
+      <h2 class="title is-4">Recent Expenses</h2>
+      <div class="table-container">
+        <div id="expenseTableContainer">
+          <p class="has-text-grey">Loading expenses...</p>
+        </div>
+      </div>
+    </div>
+
+    <div
+      id="message"
+      style="
+        display: none;
+        margin: 20px;
+        font-weight: bold;
+        color: green;
+        padding: 8px;
+        background-color: beige;
+        border-radius: 4px;
+        border-color: aquamarine;
+      "
+    ></div>
+
+    <script>
+      let viewOffset = 0; // 0 = current month, -1 = last month, etc.
+
+      function changeMonth(step) {
+          viewOffset += step;
+          updateView();
+      }
+
+      function goToToday() {
+          viewOffset = 0;
+          updateView();
+      }
+
+      function updateView() {
+          const targetDate = new Date();
+          // Adjust month based on offset
+          targetDate.setMonth(targetDate.getMonth() + viewOffset);
+          
+          const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+          const monthLabel = monthNames[targetDate.getMonth()] + " " + String(targetDate.getFullYear()).slice(-2);
+          
+          // Update header text
+          document.getElementById('monthDisplay').innerText = `Spending: ${monthLabel}`;
+          
+          // Trigger new data fetch for that specific sheet
+          fetchAndRenderExpenses(monthLabel);
+      }
+
+      let allExpenses = [];
+      // Global variable to store the latest EUR rate
+      let latestEurRate = 0;
+      // Store the original amount input by the user before any calculation
+      let originalAmountInput = 0;
+
+      // --- INITIALIZATION ---
+
+      // Set current date on load
+      const datePicker = document.getElementById('datePicker');
+      const today = new Date();
+      const dd = String(today.getDate()).padStart(2, '0');
+      const mm = String(today.getMonth() + 1).padStart(2, '0'); // January is 0!
+      const yyyy = today.getFullYear();
+      const currentDate = `${yyyy}-${mm}-${dd}`;
+      datePicker.value = currentDate;
+      
+      // Fetch the EUR rate immediately on page load
+      getDatRate(); 
+
+      // --- NEW DISPLAY & CALCULATION LOGIC ---
+
+      const amountField = document.getElementById("amount");
+      const euroCheckbox = document.getElementById("euroCheckbox");
+      const splitCheckbox = document.getElementById("split-expense");
+
+      // Add event listener to re-calculate whenever the amount changes
+      amountField.addEventListener('input', calculateAndDisplay);
+
+      /**
+       * Updates the label for the amount field based on the EUR checkbox state.
+       */
+      function updateAmountLabel() {
+        const label = document.getElementById('amount-label');
+        if (euroCheckbox.checked) {
+            label.textContent = "EUR Value (To be converted to USD)";
+            // When checking the EUR box, recalculate immediately
+            if (latestEurRate === 0) {
+                getDatRate(); // Re-fetch if rate is missing
+            } else {
+                calculateAndDisplay();
+            }
+        } else {
+            label.textContent = "USD Value";
+            calculateAndDisplay();
+        }
+      }
+
+      /**
+       * Calculates the final USD amount (handling conversion and split)
+       * and updates the on-screen summary.
+       */
+      function calculateAndDisplay() {
+          const originalInput = parseFloat(amountField.value);
+          let finalUSD = originalInput;
+          let infoText = "";
+
+          // Validate input
+          if (isNaN(originalInput) || originalInput <= 0) {
+              document.getElementById("calculation-summary").style.display = "none";
+              return;
+          }
+
+          // 1. Handle EUR Conversion (if needed)
+          if (euroCheckbox.checked) {
+              if (latestEurRate > 0) {
+                  // The API provides the rate: 1 USD = X EUR.
+                  // To convert EUR to USD, we DIVIDE the EUR amount by the USD->EUR rate.
+                  finalUSD = originalInput / latestEurRate; 
+                  infoText += `(from €${originalInput.toFixed(2)} @ 1 USD = ${latestEurRate.toFixed(4)} EUR)`;
+              } else {
+                  console.warn("EUR rate not available yet or fetch failed.");
+                  // Display the original amount as a fallback if rate isn't ready
+                  document.getElementById("calculated-usd").textContent = "Fetching Rate...";
+                  document.getElementById("calculation-summary").style.display = "block";
+                  return; 
+              }
+          }
+
+          // Store the USD equivalent amount before potential splitting
+          originalAmountInput = finalUSD; 
+
+          // 2. Handle Split Expense (if needed)
+          // if (splitCheckbox.checked) {
+          //     finalUSD = finalUSD / 2;
+          //     infoText += (infoText ? ' | ' : '') + `(Split: / 2)`;
+          // }
+
+          // Update the display
+          document.getElementById("calculated-usd").textContent = finalUSD.toFixed(2);
+          document.getElementById("split-info").textContent = infoText;
+          document.getElementById("calculation-summary").style.display = "block";
+      }
+
+
+      // --- EUR RATE FETCH FUNCTION ---
+
+      // Function to fetch the EUR rate
+      async function getDatRate() {
+          const apiUrl = "https://open.er-api.com/v6/latest/USD";
+          try {
+              const response = await fetch(apiUrl);
+              if (!response.ok) {
+                  throw new Error(`API error: ${response.status}`);
+              }
+              const data = await response.json();
+              // Get the rate for EUR when USD is the base currency (1 USD = X EUR)
+              latestEurRate = data.rates.EUR; 
+              console.log("Fetched EUR Rate (1 USD =):", latestEurRate);
+              // After getting the rate, run the calculation to update the display
+              calculateAndDisplay(); 
+          } catch (error) {
+              console.error("Error fetching the EUR rate:", error);
+              latestEurRate = 0; // Reset or keep 0 if fetch fails
+              alert("Failed to fetch the EUR conversion rate. Please try again later.");
+          }
+      }
+
+
+      // --- FORM SUBMISSION LOGIC ---
+      
+      document.getElementById("form").addEventListener("submit", async function (e) {
+          e.preventDefault(); // Prevent the default form submission
+
+          // Set form state to submitting
+          document.getElementById("message").textContent = "Submitting..";
+          document.getElementById("message").style.display = "block";
+          document.getElementById("message").style.backgroundColor = "beige";
+          document.getElementById("message").style.color = "green";
+          document.getElementById("submit-button").disabled = true;
+
+          // Crucial Step: The 'amount' field must be updated with the FINAL calculated USD value
+          // before FormData is constructed, so the Google Script receives the correct value.
+          
+          // Note: We use the value calculated in `calculateAndDisplay` (originalAmountInput 
+          // before splitting, or the final value if no splitting is needed)
+          let finalValueToSend = originalAmountInput; 
+          // if (splitCheckbox.checked) {
+          //     finalValueToSend = finalValueToSend / 2;
+          // }
+          
+          // Create a hidden input to send the FINAL USD amount to the sheet
+          // The 'Original Value' field now just holds the user input (USD or EUR)
+          // We must manually add the calculated value to the data sent to the backend.
+          const finalUsdInput = document.createElement('input');
+          finalUsdInput.type = 'hidden';
+          finalUsdInput.name = 'Final USD Expense'; // Name for the Google Sheet column
+          finalUsdInput.value = finalValueToSend.toFixed(2);
+          this.appendChild(finalUsdInput);
+
+
+          // Proceed to construct FormData and make the POST request
+          var formData = new FormData(this);
+          var keyValuePairs = [];
+          for (var pair of formData.entries()) {
+              keyValuePairs.push(pair[0] + "=" + pair[1]);
+          }
+
+          var formDataString = keyValuePairs.join("&");
+
+          // Send a POST request
+          fetch(
+              "https://script.google.com/macros/s/AKfycbywdFiaQvUU8idDmhBiTqu8-Ir5-nFl1LNbIKrBOnm4QuWLiixY4rDOCbM2ZV7It0oc/exec",
+              {
+                  redirect: "follow",
+                  method: "POST",
+                  body: formDataString,
+                  headers: {
+                      "Content-Type": "application/x-www-form-urlencoded",
+                      //"Content-Type": "text/plain;charset=utf-8",
+                  },
+              }
+          )
+              .then(function (response) {
+                  // Remove the temporary hidden input immediately after fetch preparation
+                  finalUsdInput.remove(); 
+                  if (response) {
+                      return response;
+                  } else {
+                      throw new Error("Failed to submit the form.");
+                  }
+              })
+              .then(function (data) {
+                  // Success message and form reset
+                  document.getElementById("message").textContent =
+                      "Data submitted successfully!";
+                  document.getElementById("message").style.backgroundColor = "green";
+                  document.getElementById("message").style.color = "beige";
+                  document.getElementById("submit-button").disabled = false;
+                  document.getElementById("form").reset();
+                  calculateAndDisplay(); // Clear the display
+                  goToToday(); // ADD THIS LINE to refresh the dashboard immediately
+
+                  setTimeout(function () {
+                      document.getElementById("message").style.display = "none";
+                  }, 2600);
+              })
+              .catch(function (error) {
+                  // Error handling
+                  console.error(error);
+                  document.getElementById("message").textContent =
+                      "An error occurred while submitting the form.";
+                  document.getElementById("message").style.display = "block";
+                  document.getElementById("submit-button").disabled = false;
+              });
+      });
+
+    // ***** This is the logic for grabbing data from the google sheets ***** //
+    // Place this function inside your <script> tag in index.html
+    function handleExpensesData(data) {
+        console.log("Data received from Script:", data);
+        
+        const summaryContainer = document.getElementById('categorySummary');
+        const tableContainer = document.getElementById('expenseTableContainer');
+
+        // Safety Check: If script fails, show error instead of "Loading"
+        if (!data || !data.expenses) {
+            summaryContainer.innerHTML = '<p class="has-text-danger p-4">Error: Could not retrieve data from Sheet.</p>';
+            tableContainer.innerHTML = '<p class="has-text-danger p-4">Check Google Script permissions.</p>';
+            return;
+        }
+
+        allExpenses = data.expenses;
+        const budgets = data.budgets || {};
+
+        // SYNC TO UTC: Match the viewed month/year to the UTC transactions
+        const viewDate = new Date();
+        viewDate.setMonth(viewDate.getMonth() + viewOffset);
+        const vMonth = viewDate.getMonth(); // We use local for the navigation...
+        const vYear = viewDate.getFullYear();
+
+        let grandTotal = 0;
+        let budgetedSpendTotal = 0;
+        let totalBudgetLimit = 0;
+        const actuals = {};
+
+        Object.keys(budgets).forEach(cat => { totalBudgetLimit += budgets[cat]; });
+
+        // Filter all transactions for the month
+        const monthlyExpenses = allExpenses.filter(row => {
+            const date = new Date(row["Transaction Date"]);
+            // Match using getUTCMonth to avoid the "midnight shift"
+            return date.getUTCMonth() === vMonth && date.getUTCFullYear() === vYear;
+        });
+
+        monthlyExpenses.forEach(row => {
+            const cat = row["Category"] || "Other";
+            const amount = parseFloat(row["Final USD Expense"]) || 0;
+            actuals[cat] = (actuals[cat] || 0) + amount;
+            grandTotal += amount;
+            if (budgets[cat] !== undefined) budgetedSpendTotal += amount;
+        });
+
+        // Calculate Balance
+        const remainingBalance = totalBudgetLimit - budgetedSpendTotal;
+        const overallPercent = totalBudgetLimit > 0 ? Math.min((budgetedSpendTotal / totalBudgetLimit) * 100, 100) : 0;
+        let overallBarColor = overallPercent >= 100 ? "is-danger" : (overallPercent > 80 ? "is-warning" : "is-primary");
+
+        // Render Summary
+        let summaryHTML = `
+            <div class="column is-12">
+                <div class="notification is-primary is-light p-3 mb-2">
+                    <p class="heading">Total Monthly Spend (Gross)</p>
+                    <p class="title is-4">$${grandTotal.toFixed(2)}</p>
+                </div>
+            </div>
+            <div class="column is-12">
+                <div class="box p-3 mb-4" style="background-color: #f0f8ff; border: 1px solid #d1e7ff;">
+                    <div class="is-flex is-justify-content-between is-size-7 mb-1">
+                        <span class="has-text-weight-bold">OVERALL BUDGET CAPACITY</span>
+                        <span>$${budgetedSpendTotal.toFixed(2)} / $${totalBudgetLimit.toFixed(2)}</span>
+                    </div>
+                    <progress class="progress ${overallBarColor}" value="${budgetedSpendTotal}" max="${totalBudgetLimit}">${overallPercent}%</progress>
+                    <div class="is-flex is-justify-content-between is-size-7 mt-1">
+                        <span class="has-text-grey mr-2">${overallPercent.toFixed(1)}% Used</span>
+                        <span class="has-text-weight-semibold ${remainingBalance < 0 ? 'has-text-danger' : 'has-text-success'}">
+                            ${remainingBalance < 0 ? 'Over Budget' : 'Remaining'}: $${Math.abs(remainingBalance).toFixed(2)}
+                        </span>
+                    </div>
+                </div>
+            </div>`;
+
+        // Render Category Bars
+        Object.keys(budgets).forEach(cat => {
+            const spent = actuals[cat] || 0;
+            const limit = budgets[cat];
+            const percent = limit > 0 ? Math.min((spent / limit) * 100, 100) : 0;
+            let barColor = percent >= 100 ? "is-danger" : (percent > 80 ? "is-warning" : "is-primary");
+
+            summaryHTML += `
+              <div class="column is-12">
+                  <div class="box p-3 mb-2" onclick="toggleCategoryDetails('${cat}')" style="cursor: pointer;">
+                      <div class="is-flex is-justify-content-between is-size-7 mb-1">
+                          <span class="has-text-weight-bold">${cat}</span>
+                          <span>$${spent.toFixed(2)} / $${limit}</span>
+                      </div>
+                      <progress class="progress ${barColor} is-small" value="${spent}" max="${limit}">${percent}%</progress>
+                      <div id="details-${cat}" class="category-details" style="display: none; margin-top: 10px; border-top: 1px solid #eee; padding-top: 10px;">
+                          <p class="is-size-7 has-text-grey">Loading transactions...</p>
+                      </div>
+                  </div>
+              </div>`;
+        });
+
+        summaryContainer.innerHTML = summaryHTML || `<p class="column is-full has-text-grey">No budget set for this month.</p>`;
+
+        // Render Recent Table (Last 5 of THIS month)
+        const recentData = monthlyExpenses.slice(-5).reverse();
+        let tableHTML = '<table class="table is-fullwidth is-striped is-narrow is-hoverable"><thead><tr><th>Date</th><th>Amount</th><th>Cat</th><th>Who</th></tr></thead><tbody>';
+
+        if (recentData.length === 0) {
+            tableHTML += '<tr><td colspan="4" class="has-text-centered has-text-grey italic p-4">No transactions.</td></tr>';
+        } else {
+            recentData.forEach(row => {
+                const d = new Date(row["Transaction Date"]);
+                tableHTML += `<tr>
+                    <td class="is-size-7">${(d.getUTCMonth() + 1)}/${d.getUTCDate()}</td>
+                    <td class="is-size-7 has-text-weight-bold">$${parseFloat(row["Final USD Expense"]).toFixed(2)}</td>
+                    <td class="is-size-7">${(row["Category"] || "").split(' ')[0]}</td>
+                    <td class="is-size-7">${row["Payer"] === 'Matt' ? 'M' : 'K'}</td>
+                </tr>`;
+            });
+        }
+        tableHTML += '</tbody></table>';
+        tableContainer.innerHTML = tableHTML;
+
+        // Cleanup
+        const oldScript = document.getElementById('jsonpScript');
+        if(oldScript) oldScript.remove(); 
+    }
+
+    // **** FUNCTION: ADDS THE TOGGLE FUNCTIONALITY OF THE CATEGORIES ****
+    function toggleCategoryDetails(category) {
+        const detailsDiv = document.getElementById(`details-${category}`);
+        
+        // 1. Toggle visibility
+        if (detailsDiv.style.display === 'block') {
+            detailsDiv.style.display = 'none';
+            return;
+        }
+
+        // 2. Navigation-Aware Filter Logic (Fix #4)
+        // Calculate the month/year based on the current viewOffset
+        const viewDate = new Date();
+        viewDate.setMonth(viewDate.getMonth() + viewOffset);
+        const vMonth = viewDate.getUTCMonth(); 
+        const vYear = viewDate.getUTCFullYear();
+
+        const filtered = allExpenses.filter(row => {
+            const date = new Date(row["Transaction Date"]);
+            // Match transactions to the month/year being VIEWED
+            const isThisMonth = date.getUTCMonth() === vMonth && date.getUTCFullYear() === vYear;
+            const isThisCategory = row["Category"] === category;
+            return isThisMonth && isThisCategory;
+        }).reverse();
+
+        // 3. Build Table (Fix #3: UTC Date Display)
+        if (filtered.length === 0) {
+            detailsDiv.innerHTML = `<p class="is-size-7 has-text-grey p-2 italic">No transactions found for ${category} in this month.</p>`;
+        } else {
+            let listHtml = `
+                <table class="table is-fullwidth is-narrow is-striped mb-0">
+                    <thead>
+                        <tr style="background-color: #eeeeee;">
+                            <th class="is-size-7" style="width: 15%;">Date</th>
+                            <th class="is-size-7" style="width: 20%;">Amt</th>
+                            <th class="is-size-7" style="width: 10%;">Who</th>
+                            <th class="is-size-7" style="width: 55%;">Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+
+            filtered.forEach(row => {
+                const d = new Date(row["Transaction Date"]);
+                // Use UTC methods to ensure the date doesn't shift by a day (Fix #3)
+                const displayDate = (d.getUTCMonth() + 1) + "/" + d.getUTCDate();
+                const amount = parseFloat(row["Final USD Expense"]) || 0;
+                const payerInit = row["Payer"] === 'Matt' ? 'M' : 'K';
+                const notes = row["Notes"] || "-"; 
+
+                listHtml += `
+                    <tr>
+                        <td class="is-size-7" style="white-space: nowrap;">${displayDate}</td>
+                        <td class="is-size-7 has-text-weight-bold">$${amount.toFixed(2)}</td>
+                        <td class="is-size-7">${payerInit}</td>
+                        <td class="is-size-7 italic" style="word-break: break-word; min-width: 100px;">${notes}</td>
+                    </tr>`;
+            });
+
+            listHtml += '</tbody></table>';
+            detailsDiv.innerHTML = listHtml;
+        }
+
+        detailsDiv.style.display = 'block';
+    }
+
+    // **** END OF THE TOGGLE FUNCTION ****
+
+    // **NEW FUNCTION TO INITIATE JSONP REQUEST**
+    function fetchAndRenderExpenses(monthLabel = "") {
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbywdFiaQvUU8idDmhBiTqu8-Ir5-nFl1LNbIKrBOnm4QuWLiixY4rDOCbM2ZV7It0oc/exec"; 
+        
+        // If no monthLabel provided (initial load), calculate current month label
+        if (!monthLabel) {
+            const d = new Date();
+            const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            monthLabel = monthNames[d.getMonth()] + " " + String(d.getFullYear()).slice(-2);
+            document.getElementById('monthDisplay').innerText = `Spending:  ${monthLabel}`;
+        }
+
+        const jsonpUrl = SCRIPT_URL + '?callback=handleExpensesData&monthYear=' + encodeURIComponent(monthLabel);
+        const script = document.createElement('script');
+        script.id = 'jsonpScript';
+        script.src = jsonpUrl;
+        document.head.appendChild(script);
+    }
+
+
+    // Ensure the fetch function runs when the page loads
+    fetchAndRenderExpenses();
+
+    // Also call this function in the success handler of your form submission 
+    // to refresh the table (within the .then(function (data) { ... } block)
+    // You will need to re-implement the new logic we used for the FINAL USD EXPENSE
+    // and Payer fields, as your current submit logic is from before those fixes.
+    </script>
+  </body>
+</html>
