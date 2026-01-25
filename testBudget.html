@@ -313,6 +313,33 @@
     ></div>
 
     <script>
+      let viewOffset = 0; // 0 = current month, -1 = last month, etc.
+
+      function changeMonth(step) {
+          viewOffset += step;
+          updateView();
+      }
+
+      function goToToday() {
+          viewOffset = 0;
+          updateView();
+      }
+
+      function updateView() {
+          const targetDate = new Date();
+          // Adjust month based on offset
+          targetDate.setMonth(targetDate.getMonth() + viewOffset);
+          
+          const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+          const monthLabel = monthNames[targetDate.getMonth()] + " " + String(targetDate.getFullYear()).slice(-2);
+          
+          // Update header text
+          document.getElementById('monthDisplay').innerText = `Spending: ${monthLabel}`;
+          
+          // Trigger new data fetch for that specific sheet
+          fetchAndRenderExpenses(monthLabel);
+      }
+
       let allExpenses = [];
       // Global variable to store the latest EUR rate
       let latestEurRate = 0;
@@ -536,32 +563,29 @@
         allExpenses = data.expenses;
         const budgets = data.budgets || {};
 
-        const currentMonth = new Date().getMonth();
-        const currentYear = new Date().getFullYear();
+        // Determine the month/year currently being viewed
+        const viewDate = new Date();
+        viewDate.setMonth(viewDate.getMonth() + viewOffset);
+        const vMonth = viewDate.getMonth();
+        const vYear = viewDate.getFullYear();
+
+        let grandTotal = 0;
+        let budgetedSpendTotal = 0;
+        let totalBudgetLimit = 0;
         const actuals = {};
-        let grandTotal = 0; 
-        let budgetedSpendTotal = 0; 
-        let totalBudgetLimit = 0; 
 
-        // 1. Calculate Total Budget Capacity
-        Object.keys(budgets).forEach(cat => {
-            totalBudgetLimit += budgets[cat];
-        });
+        // Calculate Budget Capacity from the returned budget sheet
+        Object.keys(budgets).forEach(cat => { totalBudgetLimit += budgets[cat]; });
 
-        // 2. Calculate Actual Spending
         allExpenses.forEach(row => {
             const date = new Date(row["Transaction Date"]);
-            if (date.getMonth() === currentMonth && date.getFullYear() === currentYear) {
+            // Match transactions to the VIEWED month
+            if (date.getMonth() === vMonth && date.getFullYear() === vYear) {
                 const cat = row["Category"] || "Other";
                 const amount = parseFloat(row["Final USD Expense"]) || 0;
-                
                 actuals[cat] = (actuals[cat] || 0) + amount;
                 grandTotal += amount;
-
-                // Track spending only for categories that have a budget limit
-                if (budgets[cat] !== undefined) {
-                    budgetedSpendTotal += amount;
-                }
+                if (budgets[cat] !== undefined) budgetedSpendTotal += amount;
             }
         });
 
@@ -592,7 +616,7 @@
                         ${overallPercent}%
                     </progress>
                     <div class="is-flex is-justify-content-between is-size-7 mt-1">
-                        <span class="has-text-grey">${overallPercent.toFixed(1)}% Used</span>
+                        <span class="has-text-grey">${overallPercent.toFixed(1)}% Used </span>
                         <span class="has-text-weight-semibold ${remainingBalance < 0 ? 'has-text-danger' : 'has-text-success'}">
                             ${remainingBalance < 0 ? 'Over Budget by' : 'Remaining'}: $${Math.abs(remainingBalance).toFixed(2)}
                         </span>
@@ -720,23 +744,21 @@
     // **** END OF THE TOGGLE FUNCTION ****
 
     // **NEW FUNCTION TO INITIATE JSONP REQUEST**
-    function fetchAndRenderExpenses() {
-        // IMPORTANT: Use your actual Google Script URL here
+    function fetchAndRenderExpenses(monthLabel = "") {
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbywdFiaQvUU8idDmhBiTqu8-Ir5-nFl1LNbIKrBOnm4QuWLiixY4rDOCbM2ZV7It0oc/exec"; 
+        
+        // If no monthLabel provided (initial load), calculate current month label
+        if (!monthLabel) {
+            const d = new Date();
+            const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            monthLabel = monthNames[d.getMonth()] + " " + String(d.getFullYear()).slice(-2);
+            document.getElementById('monthDisplay').innerText = `Spending: ${monthLabel}`;
+        }
 
-        // 1. Create the URL with the callback function name
-        // The script will call the 'handleExpensesData' function when it executes
-        const jsonpUrl = SCRIPT_URL + '?callback=handleExpensesData';
-
-        // 2. Create a new script element
+        const jsonpUrl = SCRIPT_URL + '?callback=handleExpensesData&monthYear=' + encodeURIComponent(monthLabel);
         const script = document.createElement('script');
         script.id = 'jsonpScript';
         script.src = jsonpUrl;
-        script.onerror = function() {
-            document.getElementById('expenseTableContainer').innerHTML = '<p class="has-text-danger">Failed to load expenses due to network/CORS issue.</p>';
-        };
-
-        // 3. Append the script element to the document to execute the request
         document.head.appendChild(script);
     }
 
