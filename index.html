@@ -283,7 +283,14 @@
     </form>
 
     <div class="container mt-4">
-      <h2 class="title is-4">Monthly Spending</h2>
+      <div class="is-flex is-justify-content-between is-align-items-center mb-3">
+        <h2 class="title is-4 mb-0" id="monthDisplay">Monthly Spending</h2>
+        <div class="field has-addons">
+          <p class="control"><button class="button is-small is-primary is-outlined" onclick="changeMonth(-1)">←</button></p>
+          <p class="control"><button class="button is-small is-primary is-outlined" onclick="goToToday()">Today</button></p>
+          <p class="control"><button class="button is-small is-primary is-outlined" onclick="changeMonth(1)">→</button></p>
+        </div>
+      </div>
       <div id="categorySummary" class="columns is-mobile is-multiline">
         <p class="column is-full has-text-grey">Calculating totals...</p>
       </div>
@@ -313,6 +320,33 @@
     ></div>
 
     <script>
+      let viewOffset = 0; // 0 = current month, -1 = last month, etc.
+
+      function changeMonth(step) {
+          viewOffset += step;
+          updateView();
+      }
+
+      function goToToday() {
+          viewOffset = 0;
+          updateView();
+      }
+
+      function updateView() {
+          const targetDate = new Date();
+          // Adjust month based on offset
+          targetDate.setMonth(targetDate.getMonth() + viewOffset);
+          
+          const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+          const monthLabel = monthNames[targetDate.getMonth()] + " " + String(targetDate.getFullYear()).slice(-2);
+          
+          // Update header text
+          document.getElementById('monthDisplay').innerText = `Spending: ${monthLabel}`;
+          
+          // Trigger new data fetch for that specific sheet
+          fetchAndRenderExpenses(monthLabel);
+      }
+
       let allExpenses = [];
       // Global variable to store the latest EUR rate
       let latestEurRate = 0;
@@ -504,6 +538,7 @@
                   document.getElementById("submit-button").disabled = false;
                   document.getElementById("form").reset();
                   calculateAndDisplay(); // Clear the display
+                  goToToday(); // ADD THIS LINE to refresh the dashboard immediately
 
                   setTimeout(function () {
                       document.getElementById("message").style.display = "none";
@@ -521,107 +556,124 @@
 
     // ***** This is the logic for grabbing data from the google sheets ***** //
     // Place this function inside your <script> tag in index.html
-
     function handleExpensesData(data) {
         console.log("Data received from Script:", data);
         
         const summaryContainer = document.getElementById('categorySummary');
         const tableContainer = document.getElementById('expenseTableContainer');
 
-        // 1. Safety Check: Ensure data exists
+        // Safety Check: If script fails, show error instead of "Loading"
         if (!data || !data.expenses) {
-            tableContainer.innerHTML = '<p class="has-text-danger">Error: No expense data found.</p>';
+            summaryContainer.innerHTML = '<p class="has-text-danger p-4">Error: Could not retrieve data from Sheet.</p>';
+            tableContainer.innerHTML = '<p class="has-text-danger p-4">Check Google Script permissions.</p>';
             return;
         }
 
-        const expenses = data.expenses;
         allExpenses = data.expenses;
         const budgets = data.budgets || {};
 
-        // 2. Calculate Actual Spending for the Current Month
-        const currentMonth = new Date().getMonth();
-        const currentYear = new Date().getFullYear();
-        const actuals = {};
-        let grandTotal = 0;
+        // SYNC TO UTC: Match the viewed month/year to the UTC transactions
+        const viewDate = new Date();
+        viewDate.setMonth(viewDate.getMonth() + viewOffset);
+        const vMonth = viewDate.getMonth(); // We use local for the navigation...
+        const vYear = viewDate.getFullYear();
 
-        expenses.forEach(row => {
+        let grandTotal = 0;
+        let budgetedSpendTotal = 0;
+        let totalBudgetLimit = 0;
+        const actuals = {};
+
+        Object.keys(budgets).forEach(cat => { totalBudgetLimit += budgets[cat]; });
+
+        // Filter all transactions for the month
+        const monthlyExpenses = allExpenses.filter(row => {
             const date = new Date(row["Transaction Date"]);
-            if (date.getMonth() === currentMonth && date.getFullYear() === currentYear) {
-                // Clean category name (removes emojis for matching if necessary)
-                const cat = row["Category"] || "Other";
-                const amount = parseFloat(row["Final USD Expense"]) || 0;
-                actuals[cat] = (actuals[cat] || 0) + amount;
-                grandTotal += amount;
-            }
+            // Match using getUTCMonth to avoid the "midnight shift"
+            return date.getUTCMonth() === vMonth && date.getUTCFullYear() === vYear;
         });
 
-        // 3. Render Progress Bars based on Budget Table
+        monthlyExpenses.forEach(row => {
+            const cat = row["Category"] || "Other";
+            const amount = parseFloat(row["Final USD Expense"]) || 0;
+            actuals[cat] = (actuals[cat] || 0) + amount;
+            grandTotal += amount;
+            if (budgets[cat] !== undefined) budgetedSpendTotal += amount;
+        });
+
+        // Calculate Balance
+        const remainingBalance = totalBudgetLimit - budgetedSpendTotal;
+        const overallPercent = totalBudgetLimit > 0 ? Math.min((budgetedSpendTotal / totalBudgetLimit) * 100, 100) : 0;
+        let overallBarColor = overallPercent >= 100 ? "is-danger" : (overallPercent > 80 ? "is-warning" : "is-primary");
+
+        // Render Summary
         let summaryHTML = `
             <div class="column is-12">
                 <div class="notification is-primary is-light p-3 mb-2">
-                    <p class="heading">Total Monthly Spend</p>
+                    <p class="heading">Total Monthly Spend (Gross)</p>
                     <p class="title is-4">$${grandTotal.toFixed(2)}</p>
+                </div>
+            </div>
+            <div class="column is-12">
+                <div class="box p-3 mb-4" style="background-color: #f0f8ff; border: 1px solid #d1e7ff;">
+                    <div class="is-flex is-justify-content-between is-size-7 mb-1">
+                        <span class="has-text-weight-bold">OVERALL BUDGET CAPACITY</span>
+                        <span>$${budgetedSpendTotal.toFixed(2)} / $${totalBudgetLimit.toFixed(2)}</span>
+                    </div>
+                    <progress class="progress ${overallBarColor}" value="${budgetedSpendTotal}" max="${totalBudgetLimit}">${overallPercent}%</progress>
+                    <div class="is-flex is-justify-content-between is-size-7 mt-1">
+                        <span class="has-text-grey mr-2">${overallPercent.toFixed(1)}% Used</span>
+                        <span class="has-text-weight-semibold ${remainingBalance < 0 ? 'has-text-danger' : 'has-text-success'}">
+                            ${remainingBalance < 0 ? 'Over Budget' : 'Remaining'}: $${Math.abs(remainingBalance).toFixed(2)}
+                        </span>
+                    </div>
                 </div>
             </div>`;
 
-        // Loop through categories found in your Google Sheet Budget table
-        const budgetCategories = Object.keys(budgets);
-        if (budgetCategories.length > 0) {
-            budgetCategories.forEach(cat => {
-                const spent = actuals[cat] || 0;
-                const limit = budgets[cat];
-                const percent = limit > 0 ? Math.min((spent / limit) * 100, 100) : 0;
-                
-                let barColor = "is-primary"; 
-                if (percent > 80) barColor = "is-warning";
-                if (percent >= 100) barColor = "is-danger";
+        // Render Category Bars
+        Object.keys(budgets).forEach(cat => {
+            const spent = actuals[cat] || 0;
+            const limit = budgets[cat];
+            const percent = limit > 0 ? Math.min((spent / limit) * 100, 100) : 0;
+            let barColor = percent >= 100 ? "is-danger" : (percent > 80 ? "is-warning" : "is-primary");
 
-                summaryHTML += `
-                  <div class="column is-12-mobile is-12-tablet">
-                      <div class="box p-3 mb-2" onclick="toggleCategoryDetails('${cat}')" style="cursor: pointer;">
-                          <div class="is-flex is-justify-content-between is-size-7 mb-1">
-                              <span class="has-text-weight-bold">${cat}</span>
-                              <span>$${spent.toFixed(2)} / $${limit}</span>
-                          </div>
-                          <progress class="progress ${barColor} is-small" value="${spent}" max="${limit}">
-                              ${percent}%
-                          </progress>
-                          <div id="details-${cat}" class="category-details" style="display: none; margin-top: 10px; border-top: 1px solid #eee; padding-top: 10px;">
-                              <p class="is-size-7 has-text-grey">Loading transactions...</p>
-                          </div>
+            summaryHTML += `
+              <div class="column is-12">
+                  <div class="box p-3 mb-2" onclick="toggleCategoryDetails('${cat}')" style="cursor: pointer;">
+                      <div class="is-flex is-justify-content-between is-size-7 mb-1">
+                          <span class="has-text-weight-bold">${cat}</span>
+                          <span>$${spent.toFixed(2)} / $${limit}</span>
                       </div>
-                  </div>`;
-            });
-        } else {
-            summaryHTML += `<p class="column is-full has-text-grey is-size-7">No budget limits found for this month.</p>`;
-        }
-        summaryContainer.innerHTML = summaryHTML;
-
-        // 4. Render Recent Expenses Table
-        const recentData = expenses.slice(-5).reverse(); 
-        const headers = ["Date", "Amount", "Category", "Who"]; 
-        
-        let tableHTML = '<table class="table is-fullwidth is-striped is-narrow is-hoverable">';
-        tableHTML += '<thead><tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr></thead><tbody>';
-
-        recentData.forEach(row => {
-            // Formating: Date (MM-DD), Amount ($), Category (Icon only), Payer (Initial)
-            const displayDate = String(row["Transaction Date"]).split('T')[0].slice(5);
-            const displayCat = row["Category"] ? row["Category"].split(' ')[0] : '-';
-            const displayPayer = row["Payer"] === 'Matt' ? 'M' : 'K';
-
-            tableHTML += `<tr>
-                <td class="is-size-7" style="white-space: nowrap;">${displayDate}</td>
-                <td class="is-size-7">$${parseFloat(row["Final USD Expense"]).toFixed(2)}</td>
-                <td class="is-size-7">${displayCat}</td>
-                <td class="is-size-7">${displayPayer}</td>
-            </tr>`;
+                      <progress class="progress ${barColor} is-small" value="${spent}" max="${limit}">${percent}%</progress>
+                      <div id="details-${cat}" class="category-details" style="display: none; margin-top: 10px; border-top: 1px solid #eee; padding-top: 10px;">
+                          <p class="is-size-7 has-text-grey">Loading transactions...</p>
+                      </div>
+                  </div>
+              </div>`;
         });
-        tableHTML += '</tbody></table>';
 
+        summaryContainer.innerHTML = summaryHTML || `<p class="column is-full has-text-grey">No budget set for this month.</p>`;
+
+        // Render Recent Table (Last 5 of THIS month)
+        const recentData = monthlyExpenses.slice(-5).reverse();
+        let tableHTML = '<table class="table is-fullwidth is-striped is-narrow is-hoverable"><thead><tr><th>Date</th><th>Amount</th><th>Cat</th><th>Who</th></tr></thead><tbody>';
+
+        if (recentData.length === 0) {
+            tableHTML += '<tr><td colspan="4" class="has-text-centered has-text-grey italic p-4">No transactions.</td></tr>';
+        } else {
+            recentData.forEach(row => {
+                const d = new Date(row["Transaction Date"]);
+                tableHTML += `<tr>
+                    <td class="is-size-7">${(d.getUTCMonth() + 1)}/${d.getUTCDate()}</td>
+                    <td class="is-size-7 has-text-weight-bold">$${parseFloat(row["Final USD Expense"]).toFixed(2)}</td>
+                    <td class="is-size-7">${(row["Category"] || "").split(' ')[0]}</td>
+                    <td class="is-size-7">${row["Payer"] === 'Matt' ? 'M' : 'K'}</td>
+                </tr>`;
+            });
+        }
+        tableHTML += '</tbody></table>';
         tableContainer.innerHTML = tableHTML;
 
-        // Cleanup script tag
+        // Cleanup
         const oldScript = document.getElementById('jsonpScript');
         if(oldScript) oldScript.remove(); 
     }
@@ -636,20 +688,24 @@
             return;
         }
 
-        // 2. Filter logic for current month and category
-        const currentMonth = new Date().getMonth();
-        const currentYear = new Date().getFullYear();
+        // 2. Navigation-Aware Filter Logic (Fix #4)
+        // Calculate the month/year based on the current viewOffset
+        const viewDate = new Date();
+        viewDate.setMonth(viewDate.getMonth() + viewOffset);
+        const vMonth = viewDate.getUTCMonth(); 
+        const vYear = viewDate.getUTCFullYear();
 
         const filtered = allExpenses.filter(row => {
             const date = new Date(row["Transaction Date"]);
-            const isThisMonth = date.getMonth() === currentMonth && date.getFullYear() === currentYear;
+            // Match transactions to the month/year being VIEWED
+            const isThisMonth = date.getUTCMonth() === vMonth && date.getUTCFullYear() === vYear;
             const isThisCategory = row["Category"] === category;
             return isThisMonth && isThisCategory;
         }).reverse();
 
-        // 3. Build Table with specified headers
+        // 3. Build Table (Fix #3: UTC Date Display)
         if (filtered.length === 0) {
-            detailsDiv.innerHTML = `<p class="is-size-7 has-text-grey p-2 italic">No transactions found for ${category}.</p>`;
+            detailsDiv.innerHTML = `<p class="is-size-7 has-text-grey p-2 italic">No transactions found for ${category} in this month.</p>`;
         } else {
             let listHtml = `
                 <table class="table is-fullwidth is-narrow is-striped mb-0">
@@ -665,10 +721,10 @@
 
             filtered.forEach(row => {
                 const d = new Date(row["Transaction Date"]);
-                const displayDate = (d.getMonth() + 1) + "/" + d.getDate();
+                // Use UTC methods to ensure the date doesn't shift by a day (Fix #3)
+                const displayDate = (d.getUTCMonth() + 1) + "/" + d.getUTCDate();
                 const amount = parseFloat(row["Final USD Expense"]) || 0;
                 const payerInit = row["Payer"] === 'Matt' ? 'M' : 'K';
-                // Access the 'Notes' header from your "All Expenses" sheet
                 const notes = row["Notes"] || "-"; 
 
                 listHtml += `
@@ -690,23 +746,21 @@
     // **** END OF THE TOGGLE FUNCTION ****
 
     // **NEW FUNCTION TO INITIATE JSONP REQUEST**
-    function fetchAndRenderExpenses() {
-        // IMPORTANT: Use your actual Google Script URL here
+    function fetchAndRenderExpenses(monthLabel = "") {
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbywdFiaQvUU8idDmhBiTqu8-Ir5-nFl1LNbIKrBOnm4QuWLiixY4rDOCbM2ZV7It0oc/exec"; 
+        
+        // If no monthLabel provided (initial load), calculate current month label
+        if (!monthLabel) {
+            const d = new Date();
+            const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            monthLabel = monthNames[d.getMonth()] + " " + String(d.getFullYear()).slice(-2);
+            document.getElementById('monthDisplay').innerText = `Spending:  ${monthLabel}`;
+        }
 
-        // 1. Create the URL with the callback function name
-        // The script will call the 'handleExpensesData' function when it executes
-        const jsonpUrl = SCRIPT_URL + '?callback=handleExpensesData';
-
-        // 2. Create a new script element
+        const jsonpUrl = SCRIPT_URL + '?callback=handleExpensesData&monthYear=' + encodeURIComponent(monthLabel);
         const script = document.createElement('script');
         script.id = 'jsonpScript';
         script.src = jsonpUrl;
-        script.onerror = function() {
-            document.getElementById('expenseTableContainer').innerHTML = '<p class="has-text-danger">Failed to load expenses due to network/CORS issue.</p>';
-        };
-
-        // 3. Append the script element to the document to execute the request
         document.head.appendChild(script);
     }
 
