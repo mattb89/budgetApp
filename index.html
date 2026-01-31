@@ -334,6 +334,10 @@
 
       function updateView() {
           const targetDate = new Date();
+          // 1. SET THE DAY TO THE 1ST FIRST
+          // This prevents the "31st" from rolling over into March when viewing February
+          targetDate.setDate(1);
+        
           // Adjust month based on offset
           targetDate.setMonth(targetDate.getMonth() + viewOffset);
           
