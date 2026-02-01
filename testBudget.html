@@ -566,20 +566,18 @@
         const summaryContainer = document.getElementById('categorySummary');
         const tableContainer = document.getElementById('expenseTableContainer');
 
-        // Safety Check: If script fails, show error instead of "Loading"
         if (!data || !data.expenses) {
             summaryContainer.innerHTML = '<p class="has-text-danger p-4">Error: Could not retrieve data from Sheet.</p>';
-            tableContainer.innerHTML = '<p class="has-text-danger p-4">Check Google Script permissions.</p>';
             return;
         }
 
         allExpenses = data.expenses;
         const budgets = data.budgets || {};
 
-        // SYNC TO UTC: Match the viewed month/year to the UTC transactions
+        // 1. Maintain your original Navigation-Aware date logic
         const viewDate = new Date();
         viewDate.setMonth(viewDate.getMonth() + viewOffset);
-        const vMonth = viewDate.getMonth(); // We use local for the navigation...
+        const vMonth = viewDate.getMonth(); 
         const vYear = viewDate.getFullYear();
 
         let grandTotal = 0;
@@ -587,12 +585,12 @@
         let totalBudgetLimit = 0;
         const actuals = {};
 
+        // 2. Keep your original loop to calculate total capacity
         Object.keys(budgets).forEach(cat => { totalBudgetLimit += budgets[cat]; });
 
-        // Filter all transactions for the month
+        // 3. Keep your original expense filtering logic
         const monthlyExpenses = allExpenses.filter(row => {
             const date = new Date(row["Transaction Date"]);
-            // Match using getUTCMonth to avoid the "midnight shift"
             return date.getUTCMonth() === vMonth && date.getUTCFullYear() === vYear;
         });
 
@@ -604,12 +602,12 @@
             if (budgets[cat] !== undefined) budgetedSpendTotal += amount;
         });
 
-        // Calculate Balance
+        // 4. Calculate Overall Health
         const remainingBalance = totalBudgetLimit - budgetedSpendTotal;
         const overallPercent = totalBudgetLimit > 0 ? Math.min((budgetedSpendTotal / totalBudgetLimit) * 100, 100) : 0;
         let overallBarColor = overallPercent >= 100 ? "is-danger" : (overallPercent > 80 ? "is-warning" : "is-primary");
 
-        // Render Summary
+        // Start building summary HTML
         let summaryHTML = `
             <div class="column is-12">
                 <div class="notification is-primary is-light p-3 mb-2">
@@ -633,27 +631,25 @@
                 </div>
             </div>`;
 
-        // Render Category Bars
-        // Inside handleExpensesData loop for budgetCategories
-        budgetCategories.forEach(cat => {
+        // 5. Render individual categories using your PREFERRED Object.keys loop
+        Object.keys(budgets).forEach(cat => {
             const spent = actuals[cat] || 0;
             const limit = budgets[cat];
             
-            // Calculate percentage, forcing 100% if over a $0 budget
+            // FIX: The $0 budget logic integrated into your original loop
             let percent = 0;
             if (limit > 0) {
                 percent = Math.min((spent / limit) * 100, 100);
             } else if (limit === 0 && spent > 0) {
-                percent = 100; 
+                percent = 100; // Force red if spending against $0 budget
             }
             
-            // Determine bar color
             let barColor = "is-primary"; 
             if (percent > 80) barColor = "is-warning";
             if (percent >= 100 || (limit === 0 && spent > 0)) barColor = "is-danger";
 
             summaryHTML += `
-              <div class="column is-12-mobile is-12-tablet">
+              <div class="column is-12">
                   <div class="box p-3 mb-2" onclick="toggleCategoryDetails('${cat}')" style="cursor: pointer;">
                       <div class="is-flex is-justify-content-between is-size-7 mb-1">
                           <span class="has-text-weight-bold">${cat}</span>
@@ -669,9 +665,9 @@
               </div>`;
         });
 
-        summaryContainer.innerHTML = summaryHTML || `<p class="column is-full has-text-grey">No budget set for this month.</p>`;
+        summaryContainer.innerHTML = summaryHTML || `<p class="column is-full has-text-grey">No budget limits found.</p>`;
 
-        // Render Recent Table (Last 5 of THIS month)
+        // 6. Fix for Recent Table (Filtered by the viewed month)
         const recentData = monthlyExpenses.slice(-5).reverse();
         let tableHTML = '<table class="table is-fullwidth is-striped is-narrow is-hoverable"><thead><tr><th>Date</th><th>Amount</th><th>Cat</th><th>Who</th></tr></thead><tbody>';
 
@@ -691,7 +687,7 @@
         tableHTML += '</tbody></table>';
         tableContainer.innerHTML = tableHTML;
 
-        // Cleanup
+        // Cleanup script tag
         const oldScript = document.getElementById('jsonpScript');
         if(oldScript) oldScript.remove(); 
     }
