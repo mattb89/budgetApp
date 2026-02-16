@@ -491,17 +491,19 @@
           // if (splitCheckbox.checked) {
           //     finalValueToSend = finalValueToSend / 2;
           // }
+          // Get the current form elements
           const categoryField = e.target.elements["Category"];
           const payerField = e.target.querySelector('input[name="Payer"]:checked');
-        
+
           if (categoryField.value === 'Funny Money' && payerField) {
             if (payerField.value === 'Matt') {
               categoryField.value = 'M Funny Money';
-            }
-            if (payerField.value === 'Katie') {
+            } else if (payerField.value === 'Katie') {
               categoryField.value = 'K Funny Money';
             }
           }
+
+          
           // Create a hidden input to send the FINAL USD amount to the sheet
           // The 'Original Value' field now just holds the user input (USD or EUR)
           // We must manually add the calculated value to the data sent to the backend.
