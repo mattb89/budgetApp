@@ -211,7 +211,8 @@
                     return true;
                 }
                 return false;
-            }).reverse();
+            //}).reverse();
+            }).sort((a, b) => new Date(b["Transaction Date"]) - new Date(a["Transaction Date"]));
 
             renderTable(filtered);
             document.getElementById('filteredTotalDesktop').textContent = `$${total.toFixed(2)}`;
