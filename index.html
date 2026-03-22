@@ -472,18 +472,21 @@
 
       // --- FORM SUBMISSION LOGIC ---
       
+      // --- FORM SUBMISSION LOGIC ---
+      
       document.getElementById("form").addEventListener("submit", async function (e) {
           e.preventDefault(); // Prevent the default form submission
 
-          // Place this at the very top of your form submit listener
+          // 1. Target form elements ONCE using 'this'
           const categoryField = this.elements["Category"];
-          const payerField = this.querySelector('input[name="Payer"]:checked');
+          const payerChecked = this.querySelector('input[name="Payer"]:checked');
+          const amountFieldInput = this.elements["amount"]; // Matches your 'id="amount"'
 
-          // If 'Funny Money' is selected, change the value sent to the sheet based on the payer
-          if (categoryField.value === 'Funny Money' && payerField) {
-              if (payerField.value === 'Matt') {
+          // 2. Logic: Handle Funny Money Mapping BEFORE constructing FormData
+          if (categoryField.value === 'Funny Money' && payerChecked) {
+              if (payerChecked.value === 'Matt') {
                   categoryField.value = 'M Funny Money';
-              } else if (payerField.value === 'Katie') {
+              } else if (payerChecked.value === 'Katie') {
                   categoryField.value = 'K Funny Money';
               }
           }
@@ -495,39 +498,17 @@
           document.getElementById("message").style.color = "green";
           document.getElementById("submit-button").disabled = true;
 
-          // Crucial Step: The 'amount' field must be updated with the FINAL calculated USD value
-          // before FormData is constructed, so the Google Script receives the correct value.
-          
-          // Note: We use the value calculated in `calculateAndDisplay` (originalAmountInput 
-          // before splitting, or the final value if no splitting is needed)
+          // 3. Final Value Logic
           let finalValueToSend = originalAmountInput; 
-          // if (splitCheckbox.checked) {
-          //     finalValueToSend = finalValueToSend / 2;
-          // }
-          // Get the current form elements
-          const categoryField = e.target.elements["Category"];
-          const payerField = e.target.querySelector('input[name="Payer"]:checked');
-
-          if (categoryField.value === 'Funny Money' && payerField) {
-            if (payerField.value === 'Matt') {
-              categoryField.value = 'M Funny Money';
-            } else if (payerField.value === 'Katie') {
-              categoryField.value = 'K Funny Money';
-            }
-          }
-
           
           // Create a hidden input to send the FINAL USD amount to the sheet
-          // The 'Original Value' field now just holds the user input (USD or EUR)
-          // We must manually add the calculated value to the data sent to the backend.
           const finalUsdInput = document.createElement('input');
           finalUsdInput.type = 'hidden';
-          finalUsdInput.name = 'Final USD Expense'; // Name for the Google Sheet column
+          finalUsdInput.name = 'Final USD Expense';
           finalUsdInput.value = finalValueToSend.toFixed(2);
           this.appendChild(finalUsdInput);
 
-
-          // Proceed to construct FormData and make the POST request
+          // 4. Construct FormData and make the POST request
           var formData = new FormData(this);
           var keyValuePairs = [];
           for (var pair of formData.entries()) {
@@ -545,12 +526,10 @@
                   body: formDataString,
                   headers: {
                       "Content-Type": "application/x-www-form-urlencoded",
-                      //"Content-Type": "text/plain;charset=utf-8",
                   },
               }
           )
               .then(function (response) {
-                  // Remove the temporary hidden input immediately after fetch preparation
                   finalUsdInput.remove(); 
                   if (response) {
                       return response;
@@ -559,25 +538,21 @@
                   }
               })
               .then(function (data) {
-                  // Success message and form reset
-                  document.getElementById("message").textContent =
-                      "Data submitted successfully!";
+                  document.getElementById("message").textContent = "Data submitted successfully!";
                   document.getElementById("message").style.backgroundColor = "green";
                   document.getElementById("message").style.color = "beige";
                   document.getElementById("submit-button").disabled = false;
                   document.getElementById("form").reset();
-                  calculateAndDisplay(); // Clear the display
-                  goToToday(); // ADD THIS LINE to refresh the dashboard immediately
+                  calculateAndDisplay();
+                  goToToday(); 
 
                   setTimeout(function () {
                       document.getElementById("message").style.display = "none";
                   }, 2600);
               })
               .catch(function (error) {
-                  // Error handling
                   console.error(error);
-                  document.getElementById("message").textContent =
-                      "An error occurred while submitting the form.";
+                  document.getElementById("message").textContent = "An error occurred while submitting the form.";
                   document.getElementById("message").style.display = "block";
                   document.getElementById("submit-button").disabled = false;
               });
