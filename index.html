@@ -1,134 +1,47 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>KAMACON Budget App</title>
+    <title>KAMACON Budget App (v1.0)</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css"
-    />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css" />
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            font-size: 16px;
-        }
-        .hero.is-primary.is-bold {
-            padding: 1rem 1.0rem;
-        }
-        .hero .hero-body {
-            padding: .25rem;
-        }
-        .hero .title {
-            font-size: 1.5rem;
-        }
-        .container {
-            padding-left: 15px !important;
-            padding-right: 15px !important;
-            width: 100%;
-        }
-        .header {
-            text-align: center;
-            padding: 1em 0;
-            background-color: #f3f3f3;
-        }
-        .item {
-            flex: 1 1 300px;
-            margin: 0.5em;
-            padding: 1em;
-            background-color: #ffffff;
-            border: 1px solid #dddddd;
-            border-radius: 5px;
-            font-size: 1.2em;
-        }
-        .label {
-            font-size: 25px;
-        }
-        #calculation-summary {
-            margin-top: 15px;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            background-color: #f9f9f9;
-            font-weight: bold;
-        }
-        #categorySummary {
-            margin-left: 0 !important;
-            margin-right: 0 !important;
-            width: 100%;
-        }
-        .category-details {
-            overflow-x: auto;
-            width: 100%;
-            -webkit-overflow-scrolling: touch;
-        }
-        .category-details thead th {
-            position: sticky;
-            top: 0;
-            z-index: 1;
-            background-color: #eeeeee;
-            border-bottom: 2px solid #dbdbdb;
-        }
-        .category-details table {
-            min-width: 400px;
-        }
-        .box {
-            transition: background-color 0.2s;
-            border-radius: 6px;
-            box-shadow: 0 2px 3px rgba(10, 10, 10, 0.1);
-        }
-        .progress {
-            margin-bottom: 0.5rem !important;
-        }
-        .table-container {
-            overflow-x: auto;
-            width: 100%;
-            -webkit-overflow-scrolling: touch;
-        }
-        @media (max-width: 600px) {
-            .box {
-                padding: 0.75rem !important;
-            }
-        }
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; font-size: 16px; }
+        .hero.is-primary.is-bold { padding: 1rem 1.0rem; }
+        .hero .hero-body { padding: .25rem; }
+        .hero .title { font-size: 1.5rem; }
+        .container { padding-left: 15px !important; padding-right: 15px !important; width: 100%; }
+        #calculation-summary { margin-top: 15px; padding: 10px; border: 1px solid #ccc; border-radius: 4px; background-color: #f9f9f9; font-weight: bold; }
+        #categorySummary { margin-left: 0 !important; margin-right: 0 !important; width: 100%; }
+        .category-details { overflow-x: auto; width: 100%; -webkit-overflow-scrolling: touch; }
+        .category-details thead th { position: sticky; top: 0; z-index: 1; background-color: #eeeeee; border-bottom: 2px solid #dbdbdb; }
+        .box { transition: background-color 0.2s; border-radius: 6px; box-shadow: 0 2px 3px rgba(10, 10, 10, 0.1); }
+        .progress { margin-bottom: 0.5rem !important; }
+        .table-container { overflow-x: auto; width: 100%; -webkit-overflow-scrolling: touch; }
+        @media (max-width: 600px) { .box { padding: 0.75rem !important; } }
     </style>
   </head>
   <body>
     <section class="hero is-primary is-bold">
       <div class="hero-body">
-        <div class="container">
-          <h1 class="title">KAMACON Budget</h1>
-        </div>
+        <div class="container"><h1 class="title">KAMACON Budget</h1></div>
       </div>
       <div class="hero-foot">
         <nav class="tabs is-boxed is-fullwidth">
           <div class="container">
             <ul>
-              <li class="is-active">
-                <a href="index.html">
-                  <span class="icon is-small">📝</span>
-                  <span>Entry Form</span>
-                </a>
-              </li>
-              <li>
-                <a href="filter.html">
-                  <span class="icon is-small">📊</span>
-                  <span>Analytics</span>
-                </a>
-              </li>
+              <li class="is-active"><a href="index.html">📝 Entry Form</a></li>
+              <li><a href="filter.html">📊 Analytics</a></li>
             </ul>
           </div>
         </nav>
       </div>
     </section>
 
-    <form id="form" class="container m-4 pl-4" method="POST">
+    <form id="form" class="container m-4 pl-4">
       <div class="field">
         <label class="label">Date of Transaction</label>
-        <div class="control">
-          <input id="datePicker" class="input" type="date" name="Transaction Date" />
-        </div>
+        <div class="control"><input id="datePicker" class="input" type="date" name="Transaction Date" /></div>
       </div>
 
       <div class="field">
@@ -147,7 +60,7 @@
       </div>
 
       <div id="calculation-summary" style="display: none;">
-          <p>Calculated USD Expense: $<span id="calculated-usd">0.00</span> <span id="split-info" style="font-weight: normal; font-size: 0.8em;"></span></p>
+          <p>Calculated USD Expense: $<span id="calculated-usd">0.00</span></p>
       </div>
 
       <div class="field">
@@ -180,18 +93,12 @@
 
       <div class="field">
         <label class="label">Additional Information</label>
-        <div class="control">
-          <textarea class="textarea" placeholder="Notes" name="Notes"></textarea>
-        </div>
+        <div class="control"><textarea class="textarea" placeholder="Notes" name="Notes"></textarea></div>
       </div>
 
       <div class="field is-grouped">
-        <div class="control">
-          <button class="button is-primary" type="submit" id="submit-button">Submit</button>
-        </div>
-        <div class="control">
-          <button class="button is-danger" type="button" onclick="document.getElementById('form').reset(); calculateAndDisplay();">Cancel</button>
-        </div>
+        <div class="control"><button class="button is-primary" type="submit" id="submit-button">Submit</button></div>
+        <div class="control"><button class="button is-danger" type="button" onclick="document.getElementById('form').reset(); calculateAndDisplay();">Cancel</button></div>
       </div>
     </form>
 
@@ -216,7 +123,7 @@
       </div>
     </div>
 
-    <div id="message" style="display: none; margin: 20px; font-weight: bold; padding: 8px; border-radius: 4px;"></div>
+    <div id="message" style="display: none; margin: 20px; font-weight: bold; padding: 10px; border-radius: 4px;"></div>
 
     <script>
       let viewOffset = 0;
@@ -229,7 +136,7 @@
 
       function updateView() {
           const targetDate = new Date();
-          targetDate.setDate(1); // Fix: Prevents skipping months on the 31st
+          targetDate.setDate(1); // Fix: Date overflow protection
           targetDate.setMonth(targetDate.getMonth() + viewOffset);
           
           const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -238,37 +145,34 @@
           fetchAndRenderExpenses(monthLabel);
       }
 
-      // Initial Date Setup
-      const today = new Date();
-      document.getElementById('datePicker').value = today.toISOString().split('T')[0];
+      // Initial Setup
+      document.getElementById('datePicker').value = new Date().toISOString().split('T')[0];
       
       async function getDatRate() {
           try {
-              const response = await fetch("https://open.er-api.com/v6/latest/USD");
-              const data = await response.json();
+              const res = await fetch("https://open.er-api.com/v6/latest/USD");
+              const data = await res.json();
               latestEurRate = data.rates.EUR; 
               calculateAndDisplay(); 
-          } catch (error) { console.error("Rate fetch failed:", error); }
+          } catch (e) { console.error(e); }
       }
       getDatRate();
 
-      const amountField = document.getElementById("amount");
-      const euroCheckbox = document.getElementById("euroCheckbox");
-      amountField.addEventListener('input', calculateAndDisplay);
+      document.getElementById("amount").addEventListener('input', calculateAndDisplay);
 
       function updateAmountLabel() {
           const label = document.getElementById('amount-label');
-          label.textContent = euroCheckbox.checked ? "EUR Value (To be converted to USD)" : "USD Value";
+          label.textContent = document.getElementById("euroCheckbox").checked ? "EUR Value (To USD)" : "USD Value";
           calculateAndDisplay();
       }
 
       function calculateAndDisplay() {
-          const originalInput = parseFloat(amountField.value);
+          const originalInput = parseFloat(document.getElementById("amount").value);
           if (isNaN(originalInput) || originalInput <= 0) {
               document.getElementById("calculation-summary").style.display = "none";
               return;
           }
-          let finalUSD = euroCheckbox.checked && latestEurRate > 0 ? originalInput / latestEurRate : originalInput;
+          let finalUSD = document.getElementById("euroCheckbox").checked && latestEurRate > 0 ? originalInput / latestEurRate : originalInput;
           originalAmountInput = finalUSD;
           document.getElementById("calculated-usd").textContent = finalUSD.toFixed(2);
           document.getElementById("calculation-summary").style.display = "block";
@@ -278,49 +182,55 @@
       document.getElementById("form").addEventListener("submit", async function (e) {
           e.preventDefault();
 
-          const categoryField = this.elements["Category"];
+          // 1. Identify Payer selection
           const payerChecked = this.querySelector('input[name="Payer"]:checked');
-
-          // Mapping Logic: Funny Money -> M/K Funny Money
-          if (categoryField.value === 'Funny Money' && payerChecked) {
-              categoryField.value = payerChecked.value === 'Matt' ? 'M Funny Money' : 'K Funny Money';
-          }
-
           const msg = document.getElementById("message");
+
+          // 2. Initial UI State
           msg.textContent = "Submitting..";
           msg.style.display = "block";
           msg.style.backgroundColor = "beige";
           document.getElementById("submit-button").disabled = true;
 
-          const finalUsdInput = document.createElement('input');
-          finalUsdInput.type = 'hidden';
-          finalUsdInput.name = 'Final USD Expense';
-          finalUsdInput.value = originalAmountInput.toFixed(2);
-          this.appendChild(finalUsdInput);
-
+          // 3. Construct Data Package
           const formData = new FormData(this);
+
+          // 4. FIX: The M/K Mapping Logic (Applied to the data, not the UI)
+          if (formData.get("Category") === "Funny Money" && payerChecked) {
+              const mappedValue = payerChecked.value === 'Matt' ? 'M Funny Money' : 'K Funny Money';
+              formData.set("Category", mappedValue); // Overrides "Funny Money" for the sheet
+          }
+
+          // 5. Add the Calculated USD Value
+          formData.append("Final USD Expense", originalAmountInput.toFixed(2));
+
+          // 6. Encode for Transfer
           const pairs = [];
           for (const pair of formData.entries()) {
               pairs.push(encodeURIComponent(pair[0]) + "=" + encodeURIComponent(pair[1]));
           }
 
+          // 7. Execute Submission
           fetch("https://script.google.com/macros/s/AKfycbywdFiaQvUU8idDmhBiTqu8-Ir5-nFl1LNbIKrBOnm4QuWLiixY4rDOCbM2ZV7It0oc/exec", {
               method: "POST",
               body: pairs.join("&"),
               headers: { "Content-Type": "application/x-www-form-urlencoded" }
           })
-          .then(res => {
-              finalUsdInput.remove();
+          .then(() => {
               msg.textContent = "Data submitted successfully!";
               msg.style.backgroundColor = "green";
               msg.style.color = "white";
               document.getElementById("submit-button").disabled = false;
               this.reset();
               calculateAndDisplay();
-              goToToday();
+              goToToday(); // Refresh dashboard
               setTimeout(() => { msg.style.display = "none"; }, 3000);
           })
-          .catch(err => { console.error(err); msg.textContent = "Error submitting."; });
+          .catch(err => { 
+              console.error(err); 
+              msg.textContent = "Error submitting."; 
+              document.getElementById("submit-button").disabled = false;
+          });
       });
 
       function handleExpensesData(data) {
@@ -330,11 +240,8 @@
 
           allExpenses = data.expenses;
           const budgets = data.budgets || {};
-          const viewDate = new Date();
-          viewDate.setDate(1); 
-          viewDate.setMonth(viewDate.getMonth() + viewOffset);
-          const vMonth = viewDate.getMonth();
-          const vYear = viewDate.getFullYear();
+          const viewDate = new Date(); viewDate.setDate(1); viewDate.setMonth(viewDate.getMonth() + viewOffset);
+          const vMonth = viewDate.getMonth(), vYear = viewDate.getFullYear();
 
           let grandTotal = 0, budgetedSpendTotal = 0, totalBudgetLimit = 0;
           const actuals = {};
@@ -356,9 +263,8 @@
           let summaryHTML = `<div class="column is-12"><div class="notification is-primary is-light p-3 mb-2"><p class="heading">Total Monthly Spend</p><p class="title is-4">$${grandTotal.toFixed(2)}</p></div></div>`;
 
           Object.keys(budgets).forEach(cat => {
-              const spent = actuals[cat] || 0;
-              const limit = budgets[cat];
-              // Fix: $0 Budget Logic
+              const spent = actuals[cat] || 0, limit = budgets[cat];
+              // Progress Bar Fix for $0 budgets
               let percent = limit > 0 ? Math.min((spent / limit) * 100, 100) : (spent > 0 ? 100 : 0);
               let barColor = (percent >= 100 || (limit === 0 && spent > 0)) ? "is-danger" : (percent > 80 ? "is-warning" : "is-primary");
 
@@ -388,7 +294,7 @@
           const viewDate = new Date(); viewDate.setDate(1); viewDate.setMonth(viewDate.getMonth() + viewOffset);
           const filtered = allExpenses.filter(row => {
               const d = new Date(row["Transaction Date"]);
-              return d.getUTCMonth() === viewDate.getUTCMonth() && d.getUTCFullYear() === viewDate.getUTCFullYear() && row["Category"] === category;
+              return d.getUTCMonth() === viewDate.getMonth() && d.getUTCFullYear() === viewDate.getFullYear() && row["Category"] === category;
           }).reverse();
 
           let html = '<table class="table is-fullwidth is-narrow is-striped"><thead><tr><th class="is-size-7">Date</th><th class="is-size-7">Amt</th><th class="is-size-7">Notes</th></tr></thead><tbody>';
