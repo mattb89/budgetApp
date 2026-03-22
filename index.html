@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>KAMACON Budget App (v1.0)</title>
+    <title>KAMACON Budget App</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css" />
@@ -24,7 +24,7 @@
   <body>
     <section class="hero is-primary is-bold">
       <div class="hero-body">
-        <div class="container"><h1 class="title">KAMACON Budget</h1></div>
+        <div class="container"><h1 class="title">KAMACON Budget (v1.1)</h1></div>
       </div>
       <div class="hero-foot">
         <nav class="tabs is-boxed is-fullwidth">
@@ -178,58 +178,74 @@
           document.getElementById("calculation-summary").style.display = "block";
       }
 
-      // --- FORM SUBMISSION LOGIC ---
+      // --- FORM SUBMISSION LOGIC (Replaces your entire redundant block) ---
       document.getElementById("form").addEventListener("submit", async function (e) {
-          e.preventDefault();
+          e.preventDefault(); // Stop page refresh
 
-          // 1. Identify Payer selection
+          // 1. SELECT ELEMENTS ONCE
+          const categoryField = this.elements["Category"];
           const payerChecked = this.querySelector('input[name="Payer"]:checked');
-          const msg = document.getElementById("message");
+          const messageDiv = document.getElementById("message");
+          const submitBtn = document.getElementById("submit-button");
 
-          // 2. Initial UI State
-          msg.textContent = "Submitting..";
-          msg.style.display = "block";
-          msg.style.backgroundColor = "beige";
-          document.getElementById("submit-button").disabled = true;
+          // 2. SET UI STATE
+          messageDiv.textContent = "Submitting..";
+          messageDiv.style.display = "block";
+          messageDiv.style.backgroundColor = "beige";
+          messageDiv.style.color = "green";
+          submitBtn.disabled = true;
 
-          // 3. Construct Data Package
+          // 3. CONSTRUCT DATA PACKAGE
           const formData = new FormData(this);
 
-          // 4. FIX: The M/K Mapping Logic (Applied to the data, not the UI)
+          // 4. FIX: The M/K Mapping Logic (Applied to data, not the UI)
+          // This ensures the Category is never blank in the sheet
           if (formData.get("Category") === "Funny Money" && payerChecked) {
-              const mappedValue = payerChecked.value === 'Matt' ? 'M Funny Money' : 'K Funny Money';
-              formData.set("Category", mappedValue); // Overrides "Funny Money" for the sheet
+              const mappedValue = (payerChecked.value === 'Matt') ? 'M Funny Money' : 'K Funny Money';
+              formData.set("Category", mappedValue); 
           }
 
-          // 5. Add the Calculated USD Value
+          // 5. Add the Calculated Price Data
           formData.append("Final USD Expense", originalAmountInput.toFixed(2));
 
-          // 6. Encode for Transfer
+          // 6. ENCODE FOR TRANSFER (Crucial for Emojis and spaces)
           const pairs = [];
           for (const pair of formData.entries()) {
               pairs.push(encodeURIComponent(pair[0]) + "=" + encodeURIComponent(pair[1]));
           }
+          const formDataString = pairs.join("&");
 
-          // 7. Execute Submission
-          fetch("https://script.google.com/macros/s/AKfycbywdFiaQvUU8idDmhBiTqu8-Ir5-nFl1LNbIKrBOnm4QuWLiixY4rDOCbM2ZV7It0oc/exec", {
-              method: "POST",
-              body: pairs.join("&"),
-              headers: { "Content-Type": "application/x-www-form-urlencoded" }
+          // 7. EXECUTE FETCH
+          fetch(
+              "https://script.google.com/macros/s/AKfycbywdFiaQvUU8idDmhBiTqu8-Ir5-nFl1LNbIKrBOnm4QuWLiixY4rDOCbM2ZV7It0oc/exec",
+              {
+                  redirect: "follow",
+                  method: "POST",
+                  body: formDataString,
+                  headers: { "Content-Type": "application/x-www-form-urlencoded" },
+              }
+          )
+          .then(response => {
+              if (response.ok) {
+                  messageDiv.textContent = "Data submitted successfully!";
+                  messageDiv.style.backgroundColor = "green";
+                  messageDiv.style.color = "white";
+                  submitBtn.disabled = false;
+                  
+                  this.reset(); 
+                  calculateAndDisplay(); 
+                  goToToday(); // Refresh dashboard
+
+                  setTimeout(() => { messageDiv.style.display = "none"; }, 3000);
+              } else {
+                  throw new Error("Submission failed");
+              }
           })
-          .then(() => {
-              msg.textContent = "Data submitted successfully!";
-              msg.style.backgroundColor = "green";
-              msg.style.color = "white";
-              document.getElementById("submit-button").disabled = false;
-              this.reset();
-              calculateAndDisplay();
-              goToToday(); // Refresh dashboard
-              setTimeout(() => { msg.style.display = "none"; }, 3000);
-          })
-          .catch(err => { 
-              console.error(err); 
-              msg.textContent = "Error submitting."; 
-              document.getElementById("submit-button").disabled = false;
+          .catch(error => {
+              console.error("Error:", error);
+              messageDiv.textContent = "Error submitting data. Check Console.";
+              messageDiv.style.backgroundColor = "red";
+              submitBtn.disabled = false;
           });
       });
 
