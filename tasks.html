@@ -123,7 +123,7 @@
     <div class="app-container">
         <nav class="navbar is-white is-fixed-top px-4">
             <div class="navbar-brand">
-                <h1 class="title is-5 py-4" style="color: var(--primary)">KAMACON Tasks (v0.3)</h1>
+                <h1 class="title is-5 py-4" style="color: var(--primary)">KAMACON Tasks (v0.4)</h1>
             </div>
         </nav>
 
@@ -175,13 +175,34 @@
 
         // HELPER: Formats YYYY-MM-DD to MMM-dd-YYYY
         function formatDateDisplay(dateStr) {
-            if (!dateStr || dateStr === "") return "";
+            if (!dateStr || dateStr === "" || dateStr === "undefined") return "";
             try {
-                const [year, month, day] = dateStr.split('-');
-                const date = new Date(year, month - 1, day);
+                // Step 1: Clean the string (handles ISO format from Google Sheets)
+                // This takes "2026-03-24T00:00:00.000Z" and turns it into "2026-03-24"
+                const cleanDate = dateStr.toString().split('T')[0];
+                const parts = cleanDate.split('-');
+                
+                // If the date isn't in a recognizable YYYY-MM-DD format, return as is
+                if (parts.length < 3) return dateStr;
+        
+                // Step 2: Create a clean local date
+                const year = parseInt(parts[0], 10);
+                const month = parseInt(parts[1], 10) - 1; // JS months are 0-indexed
+                const day = parseInt(parts[2], 10);
+                
+                const date = new Date(year, month, day);
+                
+                // Step 3: Final validation check
+                if (isNaN(date.getTime())) return dateStr;
+        
                 const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-                return `${months[date.getMonth()]}-${String(date.getDate()).padStart(2, '0')}-${year}`;
-            } catch (e) { return dateStr; }
+                
+                // Returns the MMM-dd-YYYY format you requested
+                return `${months[date.getMonth()]}-${String(date.getDate()).padStart(2, '0')}-${date.getFullYear()}`;
+            } catch (e) { 
+                console.error("Formatting Error:", e);
+                return dateStr; 
+            }
         }
 
         async function fetchTasks() {
@@ -220,12 +241,18 @@
         function openEditor(id = null) {
             currentTaskId = id;
             const task = tasks.find(t => t.ID == id) || { Task: '', Notes: '', DueDate: '', URL: '', IsImportant: 'false' };
+            
             document.getElementById('editTitle').value = task.Task;
             document.getElementById('editNotes').value = task.Notes;
-            document.getElementById('editDate').value = task.DueDate;
+            
+            // FIX: Ensure the <input type="date"> gets a clean YYYY-MM-DD string
+            const pickerDate = task.DueDate ? task.DueDate.toString().split('T')[0] : "";
+            document.getElementById('editDate').value = pickerDate;
+            
             document.getElementById('editURL').value = task.URL;
             isImportant = task.IsImportant == 'true';
             document.getElementById('starIcon').innerText = isImportant ? '★' : '☆';
+            
             document.getElementById('taskModal').classList.add('is-active');
         }
 
