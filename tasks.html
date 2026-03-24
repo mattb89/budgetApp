@@ -70,6 +70,23 @@
             document.head.appendChild(script);
         }
 
+        async function archiveTask() {
+            if (!currentTaskId) return;
+            if (!confirm("Are you sure you want to delete this task?")) return;
+        
+            const params = new URLSearchParams({
+                action: 'upsertTask',
+                ID: currentTaskId,
+                IsArchived: true // This tells the script to hide it from the UI
+            });
+        
+            await fetch(SCRIPT_URL, { method: 'POST', body: params, mode: 'no-cors' });
+            closeEditor();
+            
+            // Refresh the list immediately
+            setTimeout(fetchTasks, 500); 
+        }
+
         function renderTasks(response) {
             tasks = response.tasks || [];
             const list = document.getElementById('taskList');
