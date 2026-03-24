@@ -3,153 +3,134 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>KAMACON Tasks</title>
+    <title>DEBUG: KAMACON Tasks</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
     <style>
-        :root { --google-blue: #1a73e8; --text-grey: #5f6368; }
-        body { background: #fff; font-family: 'Google Sans', Arial, sans-serif; padding-bottom: 80px; }
-        .task-item { display: flex; align-items: flex-start; padding: 16px; border-bottom: 1px solid #f1f3f4; transition: background 0.2s; }
-        .task-item:active { background: #f8f9fa; }
-        .checkbox-round { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #dadce0; appearance: none; cursor: pointer; margin-right: 15px; flex-shrink: 0; }
-        .checkbox-round:checked { background: var(--google-blue); border-color: var(--google-blue); position: relative; }
-        .checkbox-round:checked::after { content: '✓'; color: white; position: absolute; left: 3px; top: -2px; font-size: 14px; }
-        .task-content { flex-grow: 1; }
-        .task-title { font-size: 16px; color: #202124; margin-bottom: 4px; }
-        .completed .task-title { text-decoration: line-through; color: #9aa0a6; }
-        .task-meta { font-size: 12px; color: var(--text-grey); display: flex; gap: 10px; flex-wrap: wrap; }
-        .important-star { color: #fbbc04; margin-left: auto; font-size: 20px; cursor: pointer; }
-        .fab { position: fixed; bottom: 24px; right: 24px; width: 56px; height: 56px; background: white; border-radius: 16px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; }
-        /* Modal as Bottom Sheet */
-        .modal-card { position: fixed; bottom: 0; margin: 0; width: 100%; border-radius: 24px 24px 0 0; transform: translateY(100%); transition: transform 0.3s ease; }
+        :root { --google-blue: #1a73e8; }
+        body { background: #fff; font-family: sans-serif; padding-bottom: 80px; }
+        .task-item { display: flex; align-items: flex-start; padding: 16px; border-bottom: 1px solid #f1f3f4; }
+        .checkbox-round { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #dadce0; appearance: none; margin-right: 15px; flex-shrink: 0; }
+        .task-title { font-size: 16px; color: #202124; }
+        .fab { position: fixed; bottom: 24px; right: 24px; width: 56px; height: 56px; background: white; border-radius: 16px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; cursor: pointer; border: 1px solid #ddd; z-index: 999; }
+        .modal-card { position: fixed; bottom: 0; margin: 0; width: 100%; border-radius: 20px 20px 0 0; transform: translateY(100%); transition: 0.3s; }
         .modal.is-active .modal-card { transform: translateY(0); }
+        #debug-log { background: #fff3cd; padding: 10px; font-size: 12px; border-bottom: 1px solid #ffeeba; display: none; }
     </style>
 </head>
 <body>
+    <div id="debug-log">System: Initializing...</div>
+
     <nav class="navbar is-white is-fixed-top px-4" style="border-bottom: 1px solid #dadce0;">
-        <div class="navbar-brand"><h1 class="title is-4 py-4">Tasks (v0.2)</h1></div>
+        <div class="navbar-brand"><h1 class="title is-4 py-4">Tasks (Debug Mode)</h1></div>
     </nav>
 
     <div class="container mt-6 pt-4" id="taskList">
-        <p class="has-text-centered has-text-grey mt-6">Loading your tasks...</p>
+        <p class="has-text-centered has-text-grey mt-6" id="status-msg">Attempting to connect to script...</p>
     </div>
 
-    <button class="fab" onclick="openEditor()">
-        +<img src="https://www.gstatic.com/images/icons/material/system_gm/2x/add_google_blue_36dp.png" width="30">
+    <button class="fab" onclick="openEditor()" id="addTaskBtn">
+        <span style="font-size: 30px; color: #1a73e8; font-weight: bold;">+</span>
     </button>
 
     <div class="modal" id="taskModal">
         <div class="modal-background" onclick="closeEditor()"></div>
         <div class="modal-card">
             <section class="modal-card-body p-5">
-                <input id="editTitle" class="input is-shadowless is-borderless title is-5" style="border:none" placeholder="New task">
-                <textarea id="editNotes" class="textarea is-shadowless mt-2" placeholder="Add details" rows="2" style="border:none"></textarea>
-                <div class="field is-grouped is-grouped-multiline mt-4">
-                    <div class="control"><input type="date" id="editDate" class="button is-small is-light"></div>
-                    <div class="control"><input type="url" id="editURL" class="input is-small" placeholder="Add URL (https://)"></div>
+                <input id="editTitle" class="input is-shadowless" placeholder="Task title" style="border:none; font-size: 20px;">
+                <textarea id="editNotes" class="textarea is-shadowless mt-2" placeholder="Details" style="border:none"></textarea>
+                <div class="mt-4">
+                    <input type="date" id="editDate" class="input is-small mb-2">
+                    <input type="url" id="editURL" class="input is-small" placeholder="https://link.com">
                 </div>
-                <div class="is-flex is-justify-content-between is-align-items-center mt-5">
-                    <div>
-                        <button class="button is-ghost p-0 mr-3" onclick="toggleImportance()"><span id="starIcon">☆</span> Important</button>
-                        <button class="button is-danger is-light is-small" onclick="archiveTask()">Archive</button>
-                    </div>
-                    <button class="button is-info is-rounded has-text-weight-bold" onclick="saveTask()">Save</button>
+                <div class="is-flex is-justify-content-between mt-5">
+                    <button class="button is-light" onclick="archiveTask()">Delete</button>
+                    <button class="button is-info is-rounded" onclick="saveTask()">Save Task</button>
                 </div>
             </section>
         </div>
     </div>
 
     <script>
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbywdFiaQvUU8idDmhBiTqu8-Ir5-nFl1LNbIKrBOnm4QuWLiixY4rDOCbM2ZV7It0oc/exec"; // REPLACE THIS
+        // 3. Global Error Catcher
+        window.onerror = function(msg, url, line) {
+            alert("JS ERROR: " + msg + "\nLine: " + line);
+            document.getElementById('debug-log').style.display = 'block';
+            document.getElementById('debug-log').innerText = "ERROR: " + msg;
+        };
+
+        const SCRIPT_URL = "YOUR_APPS_SCRIPT_URL"; // PASTE URL HERE
         let tasks = [];
         let currentTaskId = null;
-        let isImportant = false;
+
+        function log(msg) {
+            console.log(msg);
+            document.getElementById('debug-log').style.display = 'block';
+            document.getElementById('debug-log').innerText = "Log: " + msg;
+        }
 
         async function fetchTasks() {
+            if (SCRIPT_URL === "https://script.google.com/macros/s/AKfycbywdFiaQvUU8idDmhBiTqu8-Ir5-nFl1LNbIKrBOnm4QuWLiixY4rDOCbM2ZV7It0oc/execRL") {
+                alert("CRITICAL: You forgot to paste your Script URL into line 95!");
+                return;
+            }
+
+            log("Requesting tasks from Google...");
             const script = document.createElement('script');
+            
+            // 4. JSONP Error Handler
+            script.onerror = () => alert("NETWORK ERROR: Could not reach the Script URL. Check your URL and Deployment settings.");
+            
             script.src = `${SCRIPT_URL}?action=getTasks&callback=renderTasks`;
             document.head.appendChild(script);
         }
 
-        async function archiveTask() {
-            if (!currentTaskId) return;
-            if (!confirm("Are you sure you want to delete this task?")) return;
-        
-            const params = new URLSearchParams({
-                action: 'upsertTask',
-                ID: currentTaskId,
-                IsArchived: true // This tells the script to hide it from the UI
-            });
-        
-            await fetch(SCRIPT_URL, { method: 'POST', body: params, mode: 'no-cors' });
-            closeEditor();
+        window.renderTasks = function(response) {
+            log("Response received! Task count: " + (response.tasks ? response.tasks.length : 0));
+            document.getElementById('status-msg').style.display = 'none';
             
-            // Refresh the list immediately
-            setTimeout(fetchTasks, 500); 
-        }
-
-        function renderTasks(response) {
             tasks = response.tasks || [];
             const list = document.getElementById('taskList');
-            list.innerHTML = tasks.length ? '' : '<p class="has-text-centered mt-6">No tasks yet!</p>';
+            list.innerHTML = tasks.length ? '' : '<p class="has-text-centered mt-6">No tasks found. Click + to add one.</p>';
             
             tasks.forEach(task => {
                 const item = document.createElement('div');
-                item.className = `task-item ${task.IsCompleted == 'true' ? 'completed' : ''}`;
-                item.onclick = (e) => { if(e.target.type !== 'checkbox') openEditor(task.ID) };
-                
-                item.innerHTML = `
-                    <input type="checkbox" class="checkbox-round" ${task.IsCompleted == 'true' ? 'checked' : ''} 
-                           onchange="toggleComplete('${task.ID}', this.checked)">
-                    <div class="task-content">
-                        <div class="task-title">${task.Task}</div>
-                        <div class="task-meta">
-                            ${task.DueDate ? `<span>📅 ${task.DueDate}</span>` : ''}
-                            ${task.URL ? `<span>🔗 Link</span>` : ''}
-                        </div>
-                    </div>
-                    ${task.IsImportant == 'true' ? '<span class="important-star">★</span>' : ''}
-                `;
+                item.className = 'task-item';
+                item.innerHTML = `<div class="task-title" onclick="openEditor('${task.ID}')">${task.Task || 'Untitled'}</div>`;
                 list.appendChild(item);
             });
+        };
+
+        function openEditor(id = null) {
+            currentTaskId = id;
+            const task = tasks.find(t => t.ID == id) || { Task: '', Notes: '', DueDate: '', URL: '' };
+            document.getElementById('editTitle').value = task.Task;
+            document.getElementById('editNotes').value = task.Notes;
+            document.getElementById('taskModal').classList.add('is-active');
         }
 
-        async function saveTask() {
-            const title = document.getElementById('editTitle').value;
-            if(!title) return;
+        function closeEditor() { document.getElementById('taskModal').classList.remove('is-active'); }
 
+        async function saveTask() {
+            log("Saving task...");
+            const title = document.getElementById('editTitle').value;
             const params = new URLSearchParams({
                 action: 'upsertTask',
                 ID: currentTaskId || '',
                 Task: title,
                 Notes: document.getElementById('editNotes').value,
                 DueDate: document.getElementById('editDate').value,
-                URL: document.getElementById('editURL').value,
-                IsImportant: isImportant,
-                IsCompleted: false,
-                IsArchived: false
+                URL: document.getElementById('editURL').value
             });
 
-            await fetch(SCRIPT_URL, { method: 'POST', body: params, mode: 'no-cors' });
-            closeEditor();
-            setTimeout(fetchTasks, 500); // Small delay for spreadsheet sync
+            try {
+                await fetch(SCRIPT_URL, { method: 'POST', body: params, mode: 'no-cors' });
+                alert("Save sent! Refreshing in 1 second...");
+                closeEditor();
+                setTimeout(fetchTasks, 1000);
+            } catch (e) {
+                alert("SAVE ERROR: " + e.message);
+            }
         }
-
-        function openEditor(id = null) {
-            currentTaskId = id;
-            const task = tasks.find(t => t.ID == id) || { Task: '', Notes: '', DueDate: '', URL: '', IsImportant: 'false' };
-            
-            document.getElementById('editTitle').value = task.Task;
-            document.getElementById('editNotes').value = task.Notes;
-            document.getElementById('editDate').value = task.DueDate;
-            document.getElementById('editURL').value = task.URL;
-            isImportant = task.IsImportant == 'true';
-            document.getElementById('starIcon').innerText = isImportant ? '★' : '☆';
-            
-            document.getElementById('taskModal').classList.add('is-active');
-        }
-
-        function closeEditor() { document.getElementById('taskModal').classList.remove('is-active'); }
-        function toggleImportance() { isImportant = !isImportant; document.getElementById('starIcon').innerText = isImportant ? '★' : '☆'; }
 
         window.onload = fetchTasks;
     </script>
