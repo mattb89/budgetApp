@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
     <style>
         :root {
-            --primary: #6366f1; /* Modern Indigo */
+            --primary: #6366f1;
             --primary-hover: #4f46e5;
             --bg-soft: #f8fafc;
             --text-main: #1e293b;
@@ -23,7 +23,6 @@
             min-height: 100vh;
         }
 
-        /* Desktop Compression: Centers and limits width */
         .app-container {
             max-width: 600px;
             margin: 0 auto;
@@ -39,9 +38,7 @@
             left: 0; right: 0;
         }
 
-        .task-list {
-            padding: 1rem;
-        }
+        .task-list { padding: 1rem; }
 
         .task-item {
             display: flex;
@@ -55,7 +52,7 @@
             border: 1px solid transparent;
         }
 
-        /* Hover Effect: Changes background and adds subtle border/shadow */
+        /* Hover Effect */
         .task-item:hover {
             background-color: #f1f5f9;
             border-color: #e2e8f0;
@@ -64,8 +61,7 @@
         }
 
         .checkbox-round {
-            width: 22px;
-            height: 22px;
+            width: 22px; height: 22px;
             border-radius: 50%;
             border: 2px solid #cbd5e1;
             appearance: none;
@@ -82,47 +78,24 @@
         }
 
         .checkbox-round:checked::after {
-            content: '✓';
-            color: white;
-            position: absolute;
-            left: 4px;
-            top: -1px;
-            font-size: 14px;
+            content: '✓'; color: white;
+            position: absolute; left: 4px; top: -1px; font-size: 14px;
         }
 
-        .task-title {
-            font-weight: 500;
-            font-size: 15px;
-            transition: color 0.2s;
-        }
+        .task-title { font-weight: 500; font-size: 15px; }
+        .completed .task-title { text-decoration: line-through; color: var(--text-muted); }
+        .task-meta { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 
-        .completed .task-title {
-            text-decoration: line-through;
-            color: var(--text-muted);
-        }
-
-        .task-meta {
-            font-size: 12px;
-            color: var(--text-muted);
-            margin-top: 2px;
-        }
-
-        /* Modern Floating Action Button */
         .fab {
             position: fixed;
             bottom: 30px;
-            right: calc(50% - 270px); /* Aligns to the compressed desktop view */
-            width: 56px;
-            height: 56px;
+            right: calc(50% - 270px);
+            width: 56px; height: 56px;
             background: var(--primary);
             border-radius: 50%;
             box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            border: none;
-            transition: transform 0.2s, background 0.2s;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; border: none; transition: 0.2s;
         }
 
         @media (max-width: 600px) {
@@ -130,61 +103,27 @@
             .app-container { box-shadow: none; }
         }
 
-        .fab:hover {
-            transform: scale(1.05);
-            background: var(--primary-hover);
-        }
+        .fab:hover { transform: scale(1.05); background: var(--primary-hover); }
+        .fab span { color: white; font-size: 32px; line-height: 1; }
 
-        .fab span {
-            color: white;
-            font-size: 32px;
-            line-height: 1;
-        }
-
-        /* Bottom Sheet Modal Styling */
         .modal-card {
-            position: fixed;
-            bottom: 0;
-            margin: 0;
-            width: 100%;
-            max-width: 600px;
+            position: fixed; bottom: 0; margin: 0;
+            width: 100%; max-width: 600px;
             border-radius: 24px 24px 0 0;
             transform: translateY(100%);
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .modal.is-active .modal-card {
-            transform: translateY(0);
-        }
-
-        .modal-card-body {
-            padding: 2rem;
-            background: white;
-        }
-
-        .input, .textarea {
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-            box-shadow: none;
-        }
-
-        .input:focus, .textarea:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 1px var(--primary);
-        }
-
-        .important-star {
-            margin-left: auto;
-            color: #f59e0b;
-            font-size: 18px;
-        }
+        .modal.is-active .modal-card { transform: translateY(0); }
+        .modal-card-body { padding: 2rem; background: white; }
+        .important-star { margin-left: auto; color: #f59e0b; font-size: 18px; }
     </style>
 </head>
 <body>
     <div class="app-container">
         <nav class="navbar is-white is-fixed-top px-4">
             <div class="navbar-brand">
-                <h1 class="title is-5 py-4" style="color: var(--primary)">KAMACON Tasks (v0.3)</h1>
+                <h1 class="title is-5 py-4" style="color: var(--primary)">KAMACON Tasks</h1>
             </div>
         </nav>
 
@@ -193,9 +132,7 @@
         </div>
     </div>
 
-    <button class="fab" onclick="openEditor()">
-        <span>+</span>
-    </button>
+    <button class="fab" onclick="openEditor()"><span>+</span></button>
 
     <div class="modal" id="taskModal">
         <div class="modal-background" onclick="closeEditor()"></div>
@@ -231,10 +168,21 @@
     </div>
 
     <script>
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbywdFiaQvUU8idDmhBiTqu8-Ir5-nFl1LNbIKrBOnm4QuWLiixY4rDOCbM2ZV7It0oc/exec"; // Ensure this matches your deployment URL
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbywdFiaQvUU8idDmhBiTqu8-Ir5-nFl1LNbIKrBOnm4QuWLiixY4rDOCbM2ZV7It0oc/exec"; 
         let tasks = [];
         let currentTaskId = null;
         let isImportant = false;
+
+        // HELPER: Formats YYYY-MM-DD to MMM-dd-YYYY
+        function formatDateDisplay(dateStr) {
+            if (!dateStr || dateStr === "") return "";
+            try {
+                const [year, month, day] = dateStr.split('-');
+                const date = new Date(year, month - 1, day);
+                const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                return `${months[date.getMonth()]}-${String(date.getDate()).padStart(2, '0')}-${year}`;
+            } catch (e) { return dateStr; }
+        }
 
         async function fetchTasks() {
             const script = document.createElement('script');
@@ -259,7 +207,7 @@
                     <div class="task-content">
                         <div class="task-title">${task.Task}</div>
                         <div class="task-meta">
-                            ${task.DueDate ? `<span>📅 ${task.DueDate}</span>` : ''}
+                            ${task.DueDate ? `<span>📅 ${formatDateDisplay(task.DueDate)}</span>` : ''}
                             ${task.URL ? `<span class="ml-2">🔗 Link</span>` : ''}
                         </div>
                     </div>
@@ -272,28 +220,20 @@
         function openEditor(id = null) {
             currentTaskId = id;
             const task = tasks.find(t => t.ID == id) || { Task: '', Notes: '', DueDate: '', URL: '', IsImportant: 'false' };
-            
             document.getElementById('editTitle').value = task.Task;
             document.getElementById('editNotes').value = task.Notes;
             document.getElementById('editDate').value = task.DueDate;
             document.getElementById('editURL').value = task.URL;
             isImportant = task.IsImportant == 'true';
             document.getElementById('starIcon').innerText = isImportant ? '★' : '☆';
-            
             document.getElementById('taskModal').classList.add('is-active');
         }
 
         function closeEditor() { document.getElementById('taskModal').classList.remove('is-active'); }
 
-        function toggleImportance() {
-            isImportant = !isImportant;
-            document.getElementById('starIcon').innerText = isImportant ? '★' : '☆';
-        }
-
         async function saveTask() {
             const title = document.getElementById('editTitle').value;
             if(!title) return;
-
             const params = new URLSearchParams({
                 action: 'upsertTask',
                 ID: currentTaskId || '',
@@ -305,7 +245,6 @@
                 IsCompleted: false,
                 IsArchived: false
             });
-
             await fetch(SCRIPT_URL, { method: 'POST', body: params, mode: 'no-cors' });
             closeEditor();
             setTimeout(fetchTasks, 500);
@@ -313,11 +252,7 @@
 
         async function toggleComplete(id, completed) {
             const task = tasks.find(t => t.ID == id);
-            const params = new URLSearchParams({
-                action: 'upsertTask',
-                ...task,
-                IsCompleted: completed
-            });
+            const params = new URLSearchParams({ action: 'upsertTask', ...task, IsCompleted: completed });
             await fetch(SCRIPT_URL, { method: 'POST', body: params, mode: 'no-cors' });
             setTimeout(fetchTasks, 500);
         }
@@ -329,6 +264,8 @@
             closeEditor();
             setTimeout(fetchTasks, 500);
         }
+
+        function toggleImportance() { isImportant = !isImportant; document.getElementById('starIcon').innerText = isImportant ? '★' : '☆'; }
 
         window.onload = fetchTasks;
     </script>
