@@ -21,7 +21,7 @@
     <div id="debug-log">System: Initializing...</div>
 
     <nav class="navbar is-white is-fixed-top px-4" style="border-bottom: 1px solid #dadce0;">
-        <div class="navbar-brand"><h1 class="title is-4 py-4">Tasks (Debug Mode v0.1)</h1></div>
+        <div class="navbar-brand"><h1 class="title is-4 py-4">Tasks (Debug Mode v0.2)</h1></div>
     </nav>
 
     <div class="container mt-6 pt-4" id="taskList">
@@ -58,7 +58,7 @@
             document.getElementById('debug-log').innerText = "ERROR: " + msg;
         };
 
-        const SCRIPT_URL = "YOUR_APPS_SCRIPT_URL"; // PASTE URL HERE
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbywdFiaQvUU8idDmhBiTqu8-Ir5-nFl1LNbIKrBOnm4QuWLiixY4rDOCbM2ZV7It0oc/exec"; // PASTE URL HERE
         let tasks = [];
         let currentTaskId = null;
 
@@ -69,7 +69,7 @@
         }
 
         async function fetchTasks() {
-            if (SCRIPT_URL === "https://script.google.com/macros/s/AKfycbywdFiaQvUU8idDmhBiTqu8-Ir5-nFl1LNbIKrBOnm4QuWLiixY4rDOCbM2ZV7It0oc/exec") {
+            if (SCRIPT_URL === "YOUR_APPS_SCRIPT_URL") {
                 alert("CRITICAL: You forgot to paste your Script URL into line 95!");
                 return;
             }
