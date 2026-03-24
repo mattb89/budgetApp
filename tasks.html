@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KAMACON Tasks</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <style>
+        :root { --google-blue: #1a73e8; --text-grey: #5f6368; }
+        body { background: #fff; font-family: 'Google Sans', Arial, sans-serif; padding-bottom: 80px; }
+        .task-item { display: flex; align-items: flex-start; padding: 16px; border-bottom: 1px solid #f1f3f4; transition: background 0.2s; }
+        .task-item:active { background: #f8f9fa; }
+        .checkbox-round { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #dadce0; appearance: none; cursor: pointer; margin-right: 15px; flex-shrink: 0; }
+        .checkbox-round:checked { background: var(--google-blue); border-color: var(--google-blue); position: relative; }
+        .checkbox-round:checked::after { content: '✓'; color: white; position: absolute; left: 3px; top: -2px; font-size: 14px; }
+        .task-content { flex-grow: 1; }
+        .task-title { font-size: 16px; color: #202124; margin-bottom: 4px; }
+        .completed .task-title { text-decoration: line-through; color: #9aa0a6; }
+        .task-meta { font-size: 12px; color: var(--text-grey); display: flex; gap: 10px; flex-wrap: wrap; }
+        .important-star { color: #fbbc04; margin-left: auto; font-size: 20px; cursor: pointer; }
+        .fab { position: fixed; bottom: 24px; right: 24px; width: 56px; height: 56px; background: white; border-radius: 16px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); display: flex; align-items: center; justify-content: center; cursor: pointer; border: none; }
+        /* Modal as Bottom Sheet */
+        .modal-card { position: fixed; bottom: 0; margin: 0; width: 100%; border-radius: 24px 24px 0 0; transform: translateY(100%); transition: transform 0.3s ease; }
+        .modal.is-active .modal-card { transform: translateY(0); }
+    </style>
+</head>
+<body>
+    <nav class="navbar is-white is-fixed-top px-4" style="border-bottom: 1px solid #dadce0;">
+        <div class="navbar-brand"><h1 class="title is-4 py-4">Tasks</h1></div>
+    </nav>
+
+    <div class="container mt-6 pt-4" id="taskList">
+        <p class="has-text-centered has-text-grey mt-6">Loading your tasks...</p>
+    </div>
+
+    <button class="fab" onclick="openEditor()">
+        <img src="https://www.gstatic.com/images/icons/material/system_gm/2x/add_google_blue_36dp.png" width="30">
+    </button>
+
+    <div class="modal" id="taskModal">
+        <div class="modal-background" onclick="closeEditor()"></div>
+        <div class="modal-card">
+            <section class="modal-card-body p-5">
+                <input id="editTitle" class="input is-shadowless is-borderless title is-5" style="border:none" placeholder="New task">
+                <textarea id="editNotes" class="textarea is-shadowless mt-2" placeholder="Add details" rows="2" style="border:none"></textarea>
+                <div class="field is-grouped is-grouped-multiline mt-4">
+                    <div class="control"><input type="date" id="editDate" class="button is-small is-light"></div>
+                    <div class="control"><input type="url" id="editURL" class="input is-small" placeholder="Add URL (https://)"></div>
+                </div>
+                <div class="is-flex is-justify-content-between is-align-items-center mt-5">
+                    <div>
+                        <button class="button is-ghost p-0 mr-3" onclick="toggleImportance()"><span id="starIcon">☆</span> Important</button>
+                        <button class="button is-danger is-light is-small" onclick="archiveTask()">Archive</button>
+                    </div>
+                    <button class="button is-info is-rounded has-text-weight-bold" onclick="saveTask()">Save</button>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script>
+        const SCRIPT_URL = "YOUR_APPS_SCRIPT_URL"; // REPLACE THIS
+        let tasks = [];
+        let currentTaskId = null;
+        let isImportant = false;
+
+        async function fetchTasks() {
+            const script = document.createElement('script');
+            script.src = `${SCRIPT_URL}?action=getTasks&callback=renderTasks`;
+            document.head.appendChild(script);
+        }
+
+        function renderTasks(response) {
+            tasks = response.tasks || [];
+            const list = document.getElementById('taskList');
+            list.innerHTML = tasks.length ? '' : '<p class="has-text-centered mt-6">No tasks yet!</p>';
+            
+            tasks.forEach(task => {
+                const item = document.createElement('div');
+                item.className = `task-item ${task.IsCompleted == 'true' ? 'completed' : ''}`;
+                item.onclick = (e) => { if(e.target.type !== 'checkbox') openEditor(task.ID) };
+                
+                item.innerHTML = `
+                    <input type="checkbox" class="checkbox-round" ${task.IsCompleted == 'true' ? 'checked' : ''} 
+                           onchange="toggleComplete('${task.ID}', this.checked)">
+                    <div class="task-content">
+                        <div class="task-title">${task.Task}</div>
+                        <div class="task-meta">
+                            ${task.DueDate ? `<span>📅 ${task.DueDate}</span>` : ''}
+                            ${task.URL ? `<span>🔗 Link</span>` : ''}
+                        </div>
+                    </div>
+                    ${task.IsImportant == 'true' ? '<span class="important-star">★</span>' : ''}
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        async function saveTask() {
+            const title = document.getElementById('editTitle').value;
+            if(!title) return;
+
+            const params = new URLSearchParams({
+                action: 'upsertTask',
+                ID: currentTaskId || '',
+                Task: title,
+                Notes: document.getElementById('editNotes').value,
+                DueDate: document.getElementById('editDate').value,
+                URL: document.getElementById('editURL').value,
+                IsImportant: isImportant,
+                IsCompleted: false,
+                IsArchived: false
+            });
+
+            await fetch(SCRIPT_URL, { method: 'POST', body: params, mode: 'no-cors' });
+            closeEditor();
+            setTimeout(fetchTasks, 500); // Small delay for spreadsheet sync
+        }
+
+        function openEditor(id = null) {
+            currentTaskId = id;
+            const task = tasks.find(t => t.ID == id) || { Task: '', Notes: '', DueDate: '', URL: '', IsImportant: 'false' };
+            
+            document.getElementById('editTitle').value = task.Task;
+            document.getElementById('editNotes').value = task.Notes;
+            document.getElementById('editDate').value = task.DueDate;
+            document.getElementById('editURL').value = task.URL;
+            isImportant = task.IsImportant == 'true';
+            document.getElementById('starIcon').innerText = isImportant ? '★' : '☆';
+            
+            document.getElementById('taskModal').classList.add('is-active');
+        }
+
+        function closeEditor() { document.getElementById('taskModal').classList.remove('is-active'); }
+        function toggleImportance() { isImportant = !isImportant; document.getElementById('starIcon').innerText = isImportant ? '★' : '☆'; }
+
+        window.onload = fetchTasks;
+    </script>
+</body>
+</html>
