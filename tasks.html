@@ -52,7 +52,6 @@
             border: 1px solid transparent;
         }
 
-        /* Hover Effect */
         .task-item:hover {
             background-color: #f1f5f9;
             border-color: #e2e8f0;
@@ -117,13 +116,35 @@
         .modal.is-active .modal-card { transform: translateY(0); }
         .modal-card-body { padding: 2rem; background: white; }
         .important-star { margin-left: auto; color: #f59e0b; font-size: 18px; }
+        
+        /* Sort Toggle Styling */
+        .sort-pill {
+            background: #f1f5f9;
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            cursor: pointer;
+            border: 1px solid #e2e8f0;
+            transition: 0.2s;
+        }
+        .sort-pill.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
     </style>
 </head>
 <body>
     <div class="app-container">
         <nav class="navbar is-white is-fixed-top px-4">
-            <div class="navbar-brand">
-                <h1 class="title is-5 py-4" style="color: var(--primary)">KAMACON Tasks (v0.4)</h1>
+            <div class="navbar-brand is-flex is-justify-content-between is-align-items-center w-100" style="width: 100%;">
+                <h1 class="title is-5 py-4" style="color: var(--primary)">KAMACON Tasks (v1.0)</h1>
+                <div class="is-flex gap-2">
+                    <div id="sortDate" class="sort-pill active" onclick="setSort('date')">By Date</div>
+                    <div id="sortStar" class="sort-pill ml-1" onclick="setSort('star')">By Star</div>
+                </div>
             </div>
         </nav>
 
@@ -135,33 +156,55 @@
     <button class="fab" onclick="openEditor()"><span>+</span></button>
 
     <div class="modal" id="taskModal">
-        <div class="modal-background" onclick="closeEditor()"></div>
+        <div class="modal-background" onclick="closeModal()"></div>
         <div class="modal-card">
             <section class="modal-card-body">
-                <div class="field">
-                    <input id="editTitle" class="input is-medium has-text-weight-bold" type="text" placeholder="What needs to be done?">
-                </div>
-                <div class="field">
-                    <textarea id="editNotes" class="textarea" placeholder="Add details or notes..." rows="3"></textarea>
-                </div>
-                <div class="columns is-mobile">
-                    <div class="column">
-                        <label class="label is-small">Due Date</label>
-                        <input type="date" id="editDate" class="input is-small">
+                <div id="viewMode">
+                    <div class="is-flex is-justify-content-between">
+                        <h1 id="viewTitle" class="title is-4 mb-2" style="color: var(--primary)"></h1>
+                        <span id="viewStar" class="important-star"></span>
                     </div>
-                    <div class="column">
-                        <label class="label is-small">Reference URL</label>
-                        <input type="url" id="editURL" class="input is-small" placeholder="https://...">
+                    <p id="viewNotes" class="mb-4" style="white-space: pre-wrap; color: var(--text-main);"></p>
+                    <div class="is-flex is-flex-direction-column gap-2 mb-5">
+                        <div id="viewDateRow" class="is-size-7 has-text-grey">
+                            📅 Due: <span id="viewDate" class="has-text-weight-semibold"></span>
+                        </div>
+                        <div id="viewURLRow" class="is-size-7">
+                            🔗 <a id="viewURL" href="#" target="_blank" class="has-text-link has-text-weight-semibold">Visit Link</a>
+                        </div>
+                    </div>
+                    <div class="is-flex is-justify-content-between mt-5">
+                        <button class="button is-light is-rounded" onclick="closeModal()">Close</button>
+                        <button class="button is-info is-rounded px-5" onclick="switchToEditMode()">Edit</button>
                     </div>
                 </div>
-                <div class="is-flex is-justify-content-between is-align-items-center mt-5">
-                    <div>
-                        <button class="button is-light is-rounded is-small mr-2" onclick="toggleImportance()">
-                            <span id="starIcon">☆</span> Important
-                        </button>
-                        <button class="button is-white is-small has-text-danger" onclick="archiveTask()">Delete</button>
+
+                <div id="editMode" style="display: none;">
+                    <div class="field">
+                        <input id="editTitle" class="input is-medium has-text-weight-bold" type="text" placeholder="Task name">
                     </div>
-                    <button class="button is-info is-rounded px-5" onclick="saveTask()">Save Task</button>
+                    <div class="field">
+                        <textarea id="editNotes" class="textarea" placeholder="Add notes..." rows="3"></textarea>
+                    </div>
+                    <div class="columns is-mobile">
+                        <div class="column">
+                            <label class="label is-small">Due Date</label>
+                            <input type="date" id="editDate" class="input is-small">
+                        </div>
+                        <div class="column">
+                            <label class="label is-small">URL</label>
+                            <input type="url" id="editURL" class="input is-small" placeholder="https://">
+                        </div>
+                    </div>
+                    <div class="is-flex is-justify-content-between is-align-items-center mt-5">
+                        <div>
+                            <button class="button is-light is-rounded is-small mr-2" onclick="toggleImportance()">
+                                <span id="starIcon">☆</span> Important
+                            </button>
+                            <button class="button is-white is-small has-text-danger" onclick="archiveTask()">Delete</button>
+                        </div>
+                        <button class="button is-info is-rounded px-5" onclick="saveTask()">Save</button>
+                    </div>
                 </div>
             </section>
         </div>
@@ -172,37 +215,18 @@
         let tasks = [];
         let currentTaskId = null;
         let isImportant = false;
+        let currentSort = 'date'; // Default sort mode
 
-        // HELPER: Formats YYYY-MM-DD to MMM-dd-YYYY
         function formatDateDisplay(dateStr) {
-            if (!dateStr || dateStr === "" || dateStr === "undefined") return "";
+            if (!dateStr || dateStr === "" || dateStr === "undefined") return "No date set";
             try {
-                // Step 1: Clean the string (handles ISO format from Google Sheets)
-                // This takes "2026-03-24T00:00:00.000Z" and turns it into "2026-03-24"
                 const cleanDate = dateStr.toString().split('T')[0];
                 const parts = cleanDate.split('-');
-                
-                // If the date isn't in a recognizable YYYY-MM-DD format, return as is
                 if (parts.length < 3) return dateStr;
-        
-                // Step 2: Create a clean local date
-                const year = parseInt(parts[0], 10);
-                const month = parseInt(parts[1], 10) - 1; // JS months are 0-indexed
-                const day = parseInt(parts[2], 10);
-                
-                const date = new Date(year, month, day);
-                
-                // Step 3: Final validation check
-                if (isNaN(date.getTime())) return dateStr;
-        
+                const date = new Date(parts[0], parts[1] - 1, parts[2]);
                 const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-                
-                // Returns the MMM-dd-YYYY format you requested
                 return `${months[date.getMonth()]}-${String(date.getDate()).padStart(2, '0')}-${date.getFullYear()}`;
-            } catch (e) { 
-                console.error("Formatting Error:", e);
-                return dateStr; 
-            }
+            } catch (e) { return dateStr; }
         }
 
         async function fetchTasks() {
@@ -211,16 +235,38 @@
             document.head.appendChild(script);
         }
 
+        // --- SORTING LOGIC ---
+        function setSort(mode) {
+            currentSort = mode;
+            document.getElementById('sortDate').classList.toggle('active', mode === 'date');
+            document.getElementById('sortStar').classList.toggle('active', mode === 'star');
+            renderTasks({ tasks: tasks }); // Re-render with existing data
+        }
+
         window.renderTasks = function(response) {
             document.getElementById('status-msg').style.display = 'none';
             tasks = response.tasks || [];
-            const list = document.getElementById('taskList');
-            list.innerHTML = tasks.length ? '' : '<div class="has-text-centered mt-6"><p class="has-text-grey">All clear! ☕</p></div>';
             
-            tasks.forEach(task => {
+            // Apply sorting
+            const sortedTasks = [...tasks].sort((a, b) => {
+                if (currentSort === 'star') {
+                    // Important (true) comes first
+                    return (b.IsImportant === 'true') - (a.IsImportant === 'true');
+                } else {
+                    // Date sort: handles empty dates by pushing them to the bottom
+                    if (!a.DueDate) return 1;
+                    if (!b.DueDate) return -1;
+                    return new Date(a.DueDate) - new Date(b.DueDate);
+                }
+            });
+
+            const list = document.getElementById('taskList');
+            list.innerHTML = sortedTasks.length ? '' : '<div class="has-text-centered mt-6"><p class="has-text-grey">All clear! ☕</p></div>';
+            
+            sortedTasks.forEach(task => {
                 const item = document.createElement('div');
                 item.className = `task-item ${task.IsCompleted == 'true' ? 'completed' : ''}`;
-                item.onclick = (e) => { if(e.target.type !== 'checkbox') openEditor(task.ID) };
+                item.onclick = (e) => { if(e.target.type !== 'checkbox') openDetailView(task.ID) };
                 
                 item.innerHTML = `
                     <input type="checkbox" class="checkbox-round" ${task.IsCompleted == 'true' ? 'checked' : ''} 
@@ -229,7 +275,6 @@
                         <div class="task-title">${task.Task}</div>
                         <div class="task-meta">
                             ${task.DueDate ? `<span>📅 ${formatDateDisplay(task.DueDate)}</span>` : ''}
-                            ${task.URL ? `<span class="ml-2">🔗 Link</span>` : ''}
                         </div>
                     </div>
                     ${task.IsImportant == 'true' ? '<span class="important-star">★</span>' : ''}
@@ -238,25 +283,50 @@
             });
         };
 
-        function openEditor(id = null) {
+        function openDetailView(id) {
             currentTaskId = id;
-            const task = tasks.find(t => t.ID == id) || { Task: '', Notes: '', DueDate: '', URL: '', IsImportant: 'false' };
-            
-            document.getElementById('editTitle').value = task.Task;
-            document.getElementById('editNotes').value = task.Notes;
-            
-            // FIX: Ensure the <input type="date"> gets a clean YYYY-MM-DD string
-            const pickerDate = task.DueDate ? task.DueDate.toString().split('T')[0] : "";
-            document.getElementById('editDate').value = pickerDate;
-            
-            document.getElementById('editURL').value = task.URL;
-            isImportant = task.IsImportant == 'true';
-            document.getElementById('starIcon').innerText = isImportant ? '★' : '☆';
-            
+            const task = tasks.find(t => t.ID == id);
+            if (!task) return;
+            document.getElementById('viewTitle').innerText = task.Task;
+            document.getElementById('viewNotes').innerText = task.Notes || "No additional notes.";
+            document.getElementById('viewStar').innerText = task.IsImportant == 'true' ? '★' : '';
+            document.getElementById('viewDate').innerText = formatDateDisplay(task.DueDate);
+            document.getElementById('viewDateRow').style.display = task.DueDate ? 'block' : 'none';
+            if (task.URL) {
+                document.getElementById('viewURL').href = task.URL;
+                document.getElementById('viewURLRow').style.display = 'block';
+            } else { document.getElementById('viewURLRow').style.display = 'none'; }
+            document.getElementById('viewMode').style.display = 'block';
+            document.getElementById('editMode').style.display = 'none';
             document.getElementById('taskModal').classList.add('is-active');
         }
 
-        function closeEditor() { document.getElementById('taskModal').classList.remove('is-active'); }
+        function switchToEditMode() {
+            const task = tasks.find(t => t.ID == currentTaskId);
+            document.getElementById('editTitle').value = task.Task;
+            document.getElementById('editNotes').value = task.Notes || "";
+            document.getElementById('editDate').value = task.DueDate ? task.DueDate.toString().split('T')[0] : "";
+            document.getElementById('editURL').value = task.URL || "";
+            isImportant = task.IsImportant == 'true';
+            document.getElementById('starIcon').innerText = isImportant ? '★' : '☆';
+            document.getElementById('viewMode').style.display = 'none';
+            document.getElementById('editMode').style.display = 'block';
+        }
+
+        function openEditor() {
+            currentTaskId = null;
+            document.getElementById('editTitle').value = "";
+            document.getElementById('editNotes').value = "";
+            document.getElementById('editDate').value = "";
+            document.getElementById('editURL').value = "";
+            isImportant = false;
+            document.getElementById('starIcon').innerText = '☆';
+            document.getElementById('viewMode').style.display = 'none';
+            document.getElementById('editMode').style.display = 'block';
+            document.getElementById('taskModal').classList.add('is-active');
+        }
+
+        function closeModal() { document.getElementById('taskModal').classList.remove('is-active'); }
 
         async function saveTask() {
             const title = document.getElementById('editTitle').value;
@@ -273,7 +343,7 @@
                 IsArchived: false
             });
             await fetch(SCRIPT_URL, { method: 'POST', body: params, mode: 'no-cors' });
-            closeEditor();
+            closeModal();
             setTimeout(fetchTasks, 500);
         }
 
@@ -288,7 +358,7 @@
             if (!currentTaskId) return;
             const params = new URLSearchParams({ action: 'upsertTask', ID: currentTaskId, IsArchived: true });
             await fetch(SCRIPT_URL, { method: 'POST', body: params, mode: 'no-cors' });
-            closeEditor();
+            closeModal();
             setTimeout(fetchTasks, 500);
         }
 
