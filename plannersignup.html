@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      body { font-family: 'Inter', sans-serif; padding: 20px; max-width: 500px; margin: auto; }
+      .form-section { margin-bottom: 20px; border: 1px solid #eee; padding: 15px; border-radius: 8px; }
+      label { display: block; font-weight: bold; margin-bottom: 5px; }
+      select, input { width: 100%; padding: 8px; margin-bottom: 10px; }
+      .cal-row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+    </style>
+  </head>
+  <body>
+    <h2>Analog Sync Setup</h2>
+    <div id="setup-form">
+      <div class="form-section">
+        <label>Name</label>
+        <input type="text" id="userName" placeholder="Your Name">
+      </div>
+
+      <div class="form-section">
+        <label>Your Calendars</label>
+        <div id="calendar-list">Loading your calendars...</div>
+      </div>
+
+      <div class="form-section">
+        <label>Timezone</label>
+        <select id="timezone">
+          <option value="America/New_York">Eastern Time</option>
+          <option value="America/Los_Angeles">Pacific Time</option>
+          <option value="Europe/London">London</option>
+        </select>
+      </div>
+
+      <button onclick="submitForm()">Save Settings</button>
+    </div>
+
+    <script>
+      // Fetch calendars on load
+      window.onload = () => {
+        google.script.run.withSuccessHandler(displayCalendars).getUserCalendars();
+      };
+
+      function displayCalendars(calendars) {
+        const container = document.getElementById('calendar-list');
+        container.innerHTML = calendars.map((cal, i) => `
+          <div class="cal-row">
+            <input type="checkbox" name="calId" value="${cal.id}">
+            <span>${cal.name}</span>
+            <input type="text" placeholder="Label" class="label-input">
+            <input type="color" class="color-input" value="#000000">
+          </div>
+        `).join('');
+      }
+
+      function submitForm() {
+        // Collect checked IDs, labels, and colors into arrays
+        // Then call google.script.run.saveUserPreferences(data)
+      }
+    </script>
+  </body>
+</html>
