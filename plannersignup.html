@@ -1,101 +1,271 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analog Sync | Personal Setup</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/lucide@latest"></script>
   <style>
-    body { font-family: 'Inter', sans-serif; color: #111; max-width: 600px; margin: 40px auto; padding: 20px; line-height: 1.5; }
-    h2 { border-bottom: 2px solid #000; padding-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
-    .section { margin-bottom: 25px; padding: 15px; border: 1px solid #eee; border-radius: 8px; background: #fafafa; }
-    label { font-weight: 800; display: block; margin-bottom: 8px; font-size: 9pt; text-transform: uppercase; }
-    input[type="text"], select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
-    .cal-item { display: grid; grid-template-columns: 30px 1fr 120px 50px; gap: 10px; align-items: center; margin-bottom: 8px; padding: 8px; background: #fff; border: 1px solid #eee; }
-    .day-selector { display: flex; gap: 10px; flex-wrap: wrap; }
-    .day-btn { padding: 8px 12px; border: 1px solid #000; background: #fff; cursor: pointer; font-size: 8pt; font-weight: bold; }
-    .day-btn.active { background: #000; color: #fff; }
-    button#submit { width: 100%; padding: 15px; background: #000; color: #fff; border: none; font-weight: bold; cursor: pointer; margin-top: 20px; text-transform: uppercase; }
+    :root {
+      --primary: #000000;
+      --accent: #6366f1;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #1e293b;
+      --border: #e2e8f0;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 550px;
+      background: var(--card);
+      padding: 32px;
+      border-radius: 24px;
+      box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);
+    }
+
+    header { text-align: center; margin-bottom: 40px; }
+    h1 { font-weight: 800; font-size: 24px; margin: 0; letter-spacing: -0.5px; }
+    p { color: #64748b; font-size: 14px; margin-top: 8px; }
+
+    .section { margin-bottom: 32px; }
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 16px;
+      color: var(--primary);
+    }
+
+    /* Form Elements */
+    input[type="text"], select {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      font-size: 15px;
+      transition: all 0.2s;
+      outline: none;
+    }
+    input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(0,0,0,0.05); }
+
+    /* Calendar Items */
+    .cal-card {
+      background: #fdfdfd;
+      border: 1.5px solid var(--border);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .cal-header { display: flex; align-items: center; gap: 12px; }
+    .cal-name { font-weight: 600; font-size: 14px; flex-grow: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cal-settings { display: grid; grid-template-columns: 1fr 50px; gap: 10px; }
+
+    /* Day Picker */
+    .day-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+      gap: 8px;
+    }
+    .day-chip {
+      padding: 10px;
+      text-align: center;
+      border: 1.5px solid var(--border);
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .day-chip.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    button#submit-btn {
+      width: 100%;
+      padding: 18px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 16px;
+      font-weight: 700;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: transform 0.2s;
+    }
+    button#submit-btn:active { transform: scale(0.98); }
+
+    #loading-screen { text-align: center; padding: 40px; }
   </style>
 </head>
 <body>
-  <h2>Analog Sync Setup</h2>
-  <div id="form">
+
+<div class="container">
+  <header>
+    <h1>ANALOG SYNC</h1>
+    <p>Configure your automated A5 booklet service</p>
+  </header>
+
+  <div id="loading-screen">
+    <p>Retrieving your calendars...</p>
+  </div>
+
+  <div id="main-form" style="display: none;">
     <div class="section">
-      <label>Full Name</label>
-      <input type="text" id="name" placeholder="Enter your name">
+      <div class="section-title"><i data-lucide="user" size="18"></i> Profile</div>
+      <input type="text" id="name" placeholder="Preferred Name">
     </div>
 
     <div class="section">
-      <label>Select Calendars & Customize Labels</label>
-      <div id="calendar-list">Loading your calendars...</div>
+      <div class="section-title"><i data-lucide="calendar" size="18"></i> Your Calendars</div>
+      <div id="calendar-list"></div>
     </div>
 
     <div class="section">
-      <label>Location & Schedule</label>
-      <input type="text" id="city" placeholder="City (e.g., London, UK)" style="margin-bottom:10px;">
+      <div class="section-title"><i data-lucide="map-pin" size="18"></i> Location & Timezone</div>
+      <input type="text" id="city" placeholder="City (e.g., London, UK)" style="margin-bottom: 12px;">
       <select id="timezone">
-        <option value="America/New_York">Eastern Time (US)</option>
-        <option value="America/Los_Angeles">Pacific Time (US)</option>
-        <option value="Europe/London">London (GMT)</option>
-        <option value="Europe/Berlin">Berlin (CET)</option>
+        <option value="" disabled selected>Select Timezone</option>
+        <optgroup label="North America">
+          <option value="America/New_York">Eastern Time (ET)</option>
+          <option value="America/Chicago">Central Time (CT)</option>
+          <option value="America/Denver">Mountain Time (MT)</option>
+          <option value="America/Los_Angeles">Pacific Time (PT)</option>
+        </optgroup>
+        <optgroup label="Europe">
+          <option value="Europe/London">London (GMT/BST)</option>
+          <option value="Europe/Paris">Paris/Berlin (CET)</option>
+          <option value="Europe/Athens">Athens/Istanbul (EET)</option>
+        </optgroup>
+        <optgroup label="Other">
+          <option value="Asia/Tokyo">Tokyo (JST)</option>
+          <option value="Australia/Sydney">Sydney (AEST)</option>
+          <option value="UTC">UTC</option>
+        </optgroup>
       </select>
     </div>
 
     <div class="section">
-      <label>Delivery Days</label>
-      <div class="day-selector" id="day-picker">
-        <div class="day-btn" onclick="this.classList.toggle('active')">Monday</div>
-        <div class="day-btn" onclick="this.classList.toggle('active')">Wednesday</div>
-        <div class="day-btn" onclick="this.classList.toggle('active')">Friday</div>
-        <div class="day-btn" onclick="this.classList.toggle('active')">Sunday</div>
+      <div class="section-title"><i data-lucide="clock" size="18"></i> Delivery Schedule</div>
+      <label style="font-size: 12px; color: #64748b; margin-bottom: 8px; display: block;">Select days of the week</label>
+      <div class="day-grid" id="day-picker">
+        <div class="day-chip" onclick="toggleDay(this)">Monday</div>
+        <div class="day-chip" onclick="toggleDay(this)">Tuesday</div>
+        <div class="day-chip" onclick="toggleDay(this)">Wednesday</div>
+        <div class="day-chip" onclick="toggleDay(this)">Thursday</div>
+        <div class="day-chip" onclick="toggleDay(this)">Friday</div>
+        <div class="day-chip" onclick="toggleDay(this)">Saturday</div>
+        <div class="day-chip" onclick="toggleDay(this)">Sunday</div>
       </div>
+
+      <label style="font-size: 12px; color: #64748b; margin-top: 20px; margin-bottom: 8px; display: block;">Delivery hour</label>
+      <select id="hour-select">
+        </select>
     </div>
 
-    <div class="section">
-      <label>Preferred Delivery Hour (0-23)</label>
-      <input type="number" id="hour" value="6" min="0" max="23">
-    </div>
-
-    <button id="submit" onclick="submitSetup()">Finish Setup</button>
+    <button id="submit-btn" onclick="submitData()">
+      Confirm Setup <i data-lucide="arrow-right" size="20"></i>
+    </button>
   </div>
+</div>
 
-  <script>
-    // 1. Fetch user's calendars from Google on load
-    window.onload = () => {
-      google.script.run.withSuccessHandler(renderCalendars).getUserCalendars();
-    };
+<script>
+  // Initialize Icons
+  lucide.createIcons();
 
-    function renderCalendars(calendars) {
-      const list = document.getElementById('calendar-list');
-      list.innerHTML = calendars.map((cal, i) => `
-        <div class="cal-item">
-          <input type="checkbox" class="cal-check" value="${cal.id}">
-          <span style="font-size: 9pt; overflow: hidden; text-overflow: ellipsis;">${cal.name}</span>
-          <input type="text" class="cal-label" placeholder="Legend Label" style="font-size: 8pt; padding: 4px;">
+  window.onload = () => {
+    // Generate Hour Options
+    const hourSelect = document.getElementById('hour-select');
+    for (let i = 0; i < 24; i++) {
+      let ampm = i >= 12 ? 'PM' : 'AM';
+      let displayHour = i % 12 || 12;
+      let opt = document.createElement('option');
+      opt.value = i;
+      opt.innerText = `${displayHour}:00 ${ampm}`;
+      hourSelect.appendChild(opt);
+    }
+
+    // Fetch Google Data
+    google.script.run.withSuccessHandler(renderForm).getUserCalendars();
+  };
+
+  function renderForm(calendars) {
+    document.getElementById('loading-screen').style.display = 'none';
+    document.getElementById('main-form').style.display = 'block';
+
+    const container = document.getElementById('calendar-list');
+    container.innerHTML = calendars.map(cal => `
+      <div class="cal-card">
+        <div class="cal-header">
+          <input type="checkbox" class="cal-check" value="${cal.id}" style="width:18px; height:18px;">
+          <span class="cal-name">${cal.name}</span>
+        </div>
+        <div class="cal-settings">
+          <input type="text" class="cal-label" placeholder="Legend Label (e.g. Work)">
           <input type="color" class="cal-color" value="#000000">
         </div>
-      `).join('');
-    }
+      </div>
+    `).join('');
+    lucide.createIcons();
+  }
 
-    function submitSetup() {
-      const btn = document.getElementById('submit');
-      btn.innerText = "Saving...";
-      btn.disabled = true;
+  function toggleDay(el) {
+    el.classList.toggle('active');
+  }
 
-      const selectedCals = Array.from(document.querySelectorAll('.cal-item')).filter(item => item.querySelector('.cal-check').checked);
-      
-      const payload = {
-        name: document.getElementById('name').value,
-        calIds: selectedCals.map(c => c.querySelector('.cal-check').value),
-        labels: selectedCals.map(c => c.querySelector('.cal-label').value || "Events"),
-        colors: selectedCals.map(c => c.querySelector('.cal-color').value),
-        city: document.getElementById('city').value,
-        timezone: document.getElementById('timezone').value,
-        days: Array.from(document.querySelectorAll('.day-btn.active')).map(b => b.innerText),
-        hour: document.getElementById('hour').value
-      };
+  function submitData() {
+    const btn = document.getElementById('submit-btn');
+    btn.innerHTML = 'Processing...';
+    btn.disabled = true;
 
-      google.script.run.withSuccessHandler(msg => {
-        document.body.innerHTML = `<h2 style="text-align:center; margin-top:50px;">${msg}</h2>`;
-      }).saveUserPreferences(payload);
-    }
-  </script>
+    const selectedCards = Array.from(document.querySelectorAll('.cal-card')).filter(c => c.querySelector('.cal-check').checked);
+
+    const data = {
+      name: document.getElementById('name').value,
+      calIds: selectedCards.map(c => c.querySelector('.cal-check').value),
+      labels: selectedCards.map(c => c.querySelector('.cal-label').value || "Events"),
+      colors: selectedCards.map(c => c.querySelector('.cal-color').value),
+      city: document.getElementById('city').value,
+      timezone: document.getElementById('timezone').value,
+      days: Array.from(document.querySelectorAll('.day-chip.active')).map(d => d.innerText),
+      hour: document.getElementById('hour-select').value
+    };
+
+    google.script.run.withSuccessHandler(msg => {
+      document.querySelector('.container').innerHTML = `
+        <div style="text-align:center; padding: 40px 0;">
+          <i data-lucide="check-circle" size="64" color="#22c55e" style="margin-bottom:20px;"></i>
+          <h1 style="margin-bottom:12px;">You're All Set!</h1>
+          <p>${msg}</p>
+        </div>
+      `;
+      lucide.createIcons();
+    }).saveUserPreferences(data);
+  }
+</script>
 </body>
 </html>
