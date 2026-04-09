@@ -1,61 +1,101 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <style>
-      body { font-family: 'Inter', sans-serif; padding: 20px; max-width: 500px; margin: auto; }
-      .form-section { margin-bottom: 20px; border: 1px solid #eee; padding: 15px; border-radius: 8px; }
-      label { display: block; font-weight: bold; margin-bottom: 5px; }
-      select, input { width: 100%; padding: 8px; margin-bottom: 10px; }
-      .cal-row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
-    </style>
-  </head>
-  <body>
-    <h2>Analog Sync Setup</h2>
-    <div id="setup-form">
-      <div class="form-section">
-        <label>Name</label>
-        <input type="text" id="userName" placeholder="Your Name">
-      </div>
-
-      <div class="form-section">
-        <label>Your Calendars</label>
-        <div id="calendar-list">Loading your calendars...</div>
-      </div>
-
-      <div class="form-section">
-        <label>Timezone</label>
-        <select id="timezone">
-          <option value="America/New_York">Eastern Time</option>
-          <option value="America/Los_Angeles">Pacific Time</option>
-          <option value="Europe/London">London</option>
-        </select>
-      </div>
-
-      <button onclick="submitForm()">Save Settings</button>
+<head>
+  <style>
+    body { font-family: 'Inter', sans-serif; color: #111; max-width: 600px; margin: 40px auto; padding: 20px; line-height: 1.5; }
+    h2 { border-bottom: 2px solid #000; padding-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
+    .section { margin-bottom: 25px; padding: 15px; border: 1px solid #eee; border-radius: 8px; background: #fafafa; }
+    label { font-weight: 800; display: block; margin-bottom: 8px; font-size: 9pt; text-transform: uppercase; }
+    input[type="text"], select { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; }
+    .cal-item { display: grid; grid-template-columns: 30px 1fr 120px 50px; gap: 10px; align-items: center; margin-bottom: 8px; padding: 8px; background: #fff; border: 1px solid #eee; }
+    .day-selector { display: flex; gap: 10px; flex-wrap: wrap; }
+    .day-btn { padding: 8px 12px; border: 1px solid #000; background: #fff; cursor: pointer; font-size: 8pt; font-weight: bold; }
+    .day-btn.active { background: #000; color: #fff; }
+    button#submit { width: 100%; padding: 15px; background: #000; color: #fff; border: none; font-weight: bold; cursor: pointer; margin-top: 20px; text-transform: uppercase; }
+  </style>
+</head>
+<body>
+  <h2>Analog Sync Setup</h2>
+  <div id="form">
+    <div class="section">
+      <label>Full Name</label>
+      <input type="text" id="name" placeholder="Enter your name">
     </div>
 
-    <script>
-      // Fetch calendars on load
-      window.onload = () => {
-        google.script.run.withSuccessHandler(displayCalendars).getUserCalendars();
+    <div class="section">
+      <label>Select Calendars & Customize Labels</label>
+      <div id="calendar-list">Loading your calendars...</div>
+    </div>
+
+    <div class="section">
+      <label>Location & Schedule</label>
+      <input type="text" id="city" placeholder="City (e.g., London, UK)" style="margin-bottom:10px;">
+      <select id="timezone">
+        <option value="America/New_York">Eastern Time (US)</option>
+        <option value="America/Los_Angeles">Pacific Time (US)</option>
+        <option value="Europe/London">London (GMT)</option>
+        <option value="Europe/Berlin">Berlin (CET)</option>
+      </select>
+    </div>
+
+    <div class="section">
+      <label>Delivery Days</label>
+      <div class="day-selector" id="day-picker">
+        <div class="day-btn" onclick="this.classList.toggle('active')">Monday</div>
+        <div class="day-btn" onclick="this.classList.toggle('active')">Wednesday</div>
+        <div class="day-btn" onclick="this.classList.toggle('active')">Friday</div>
+        <div class="day-btn" onclick="this.classList.toggle('active')">Sunday</div>
+      </div>
+    </div>
+
+    <div class="section">
+      <label>Preferred Delivery Hour (0-23)</label>
+      <input type="number" id="hour" value="6" min="0" max="23">
+    </div>
+
+    <button id="submit" onclick="submitSetup()">Finish Setup</button>
+  </div>
+
+  <script>
+    // 1. Fetch user's calendars from Google on load
+    window.onload = () => {
+      google.script.run.withSuccessHandler(renderCalendars).getUserCalendars();
+    };
+
+    function renderCalendars(calendars) {
+      const list = document.getElementById('calendar-list');
+      list.innerHTML = calendars.map((cal, i) => `
+        <div class="cal-item">
+          <input type="checkbox" class="cal-check" value="${cal.id}">
+          <span style="font-size: 9pt; overflow: hidden; text-overflow: ellipsis;">${cal.name}</span>
+          <input type="text" class="cal-label" placeholder="Legend Label" style="font-size: 8pt; padding: 4px;">
+          <input type="color" class="cal-color" value="#000000">
+        </div>
+      `).join('');
+    }
+
+    function submitSetup() {
+      const btn = document.getElementById('submit');
+      btn.innerText = "Saving...";
+      btn.disabled = true;
+
+      const selectedCals = Array.from(document.querySelectorAll('.cal-item')).filter(item => item.querySelector('.cal-check').checked);
+      
+      const payload = {
+        name: document.getElementById('name').value,
+        calIds: selectedCals.map(c => c.querySelector('.cal-check').value),
+        labels: selectedCals.map(c => c.querySelector('.cal-label').value || "Events"),
+        colors: selectedCals.map(c => c.querySelector('.cal-color').value),
+        city: document.getElementById('city').value,
+        timezone: document.getElementById('timezone').value,
+        days: Array.from(document.querySelectorAll('.day-btn.active')).map(b => b.innerText),
+        hour: document.getElementById('hour').value
       };
 
-      function displayCalendars(calendars) {
-        const container = document.getElementById('calendar-list');
-        container.innerHTML = calendars.map((cal, i) => `
-          <div class="cal-row">
-            <input type="checkbox" name="calId" value="${cal.id}">
-            <span>${cal.name}</span>
-            <input type="text" placeholder="Label" class="label-input">
-            <input type="color" class="color-input" value="#000000">
-          </div>
-        `).join('');
-      }
-
-      function submitForm() {
-        // Collect checked IDs, labels, and colors into arrays
-        // Then call google.script.run.saveUserPreferences(data)
-      }
-    </script>
-  </body>
+      google.script.run.withSuccessHandler(msg => {
+        document.body.innerHTML = `<h2 style="text-align:center; margin-top:50px;">${msg}</h2>`;
+      }).saveUserPreferences(payload);
+    }
+  </script>
+</body>
 </html>
