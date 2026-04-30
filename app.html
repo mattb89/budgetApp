@@ -9,330 +9,211 @@
       href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css"
     />
     <style>
-        /* Existing CSS for layout */
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Inter', Arial, sans-serif;
             margin: 0;
             padding: 0;
             font-size: 16px;
+            background-color: #f8fafc;
         }
+
+        /* Hero and Header Tweaks */
         .hero.is-primary.is-bold {
-            padding: 1rem 1.0rem; /* Reduce padding */
+            padding: 1rem 1.0rem;
         }
-
         .hero .hero-body {
-            padding: .25rem; /* Reduce padding in the hero body */
+            padding: .25rem;
         }
-
         .hero .title {
-            font-size: 1.5rem; /* Reduce the font size of the title */
+            font-size: 1.5rem;
         }
 
-        /* Ensure the main container doesn't have forced width */
+        /* Alignment Fix: Centered Containers */
         .container {
+            max-width: 800px !important; /* Compresses view for desktop alignment */
+            margin: 0 auto !important;
             padding-left: 15px !important;
             padding-right: 15px !important;
-            width: 100%;
         }
 
-        .header {
-            text-align: center;
-            padding: 1em 0;
-            background-color: #f3f3f3;
-        }
-
-        .content {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
-        }
-
-        .item {
-            flex: 1 1 300px; /* Adjusts the size of the item */
-            margin: 0.5em;
-            padding: 1em;
-            background-color: #ffffff;
-            border: 1px solid #dddddd;
-            border-radius: 5px;
-            font-size: 1.2em;
-        }
         .label {
-            font-size: 25px;
+            font-size: 18px; /* Slightly reduced for better mobile/desktop balance */
+            font-weight: 600;
+            color: #4a4a4a;
         }
-        /* New CSS for calculation display */
+
+        /* Calculation display */
         #calculation-summary {
             margin-top: 15px;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            background-color: #f9f9f9;
+            padding: 15px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            background-color: #ffffff;
             font-weight: bold;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
         }
 
-        /* Fix for overflowing category boxes */
-        #categorySummary {
-            margin-left: 0 !important;
-            margin-right: 0 !important;
-            width: 100%;
-        }
-
-        /* Ensure the drawer allows internal scrolling for the notes table */
-        .category-details {
-            overflow-x: auto; /* Allows the table to slide left/right inside the box */
-            width: 100%;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        .category-details thead th {
-            position: sticky;
-            top: 0;
-            z-index: 1;
-            background-color: #eeeeee;
-            border-bottom: 2px solid #dbdbdb;
-        }
-
-        /* Force the table to not exceed the box width unless scrolling */
-        .category-details table {
-            min-width: 400px; /* Ensures the headers don't squish too much */
-        }
-
-        /* Tighten up the progress bar boxes for mobile */
+        /* Table and Category styling */
         .box {
-            transition: background-color 0.2s;
-            border-radius: 6px;
-            box-shadow: 0 2px 3px rgba(10, 10, 10, 0.1);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            border: 1px solid #f1f5f9;
         }
 
         .progress {
-            margin-bottom: 0.5rem !important;
+            height: 0.75rem !important;
+            border-radius: 10px;
         }
 
-        /* Force the table to respect the screen width */
-        .table-container {
-            overflow-x: auto;
-            width: 100%;
-            -webkit-overflow-scrolling: touch;
+        /* Shared Settlement Styling */
+        .settlement-card {
+            border-left: 6px solid #6366f1;
+            background-color: #ffffff;
         }
 
-        /* Make cards look better on mobile */
-        .notification.category-card {
-            padding: 12px;
-            margin-bottom: 0px;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
+        .settlement-badge {
+            background-color: #eef2ff;
+            border-radius: 12px;
+            padding: 1rem;
         }
 
-        /* Adjust table text size for small screens */
-/* @media (max-width: 600px) {
-            .table td, .table th {
-                padding: 0.5em 0.4em !important;
-                font-size: 0.8rem;
-            }
-        }*/
-
-        /* Tighten padding for mobile so bars don't feel "fat" */
         @media (max-width: 600px) {
-            .box {
-                padding: 0.75rem !important;
-            }
-        }
-
-        /* Matt & Katie Split Table Styles */
-        .split-table {
-            border: 2px solid #000;
-        }
-        .split-table thead th {
-            background-color: #c5e0b4 !important; /* Light green from spreadsheet image */
-            color: #000 !important;
-            text-align: center;
-            border: 1px solid #000;
-        }
-        .split-table td, .split-table th {
-            border: 1px solid #000;
-            font-family: Arial, sans-serif;
-            color: #000;
-        }
-        .has-text-weight-bold-spreadsheet {
-            font-weight: bold;
+            .box { padding: 1rem !important; }
+            .label { font-size: 16px; }
         }
     </style>
   </head>
   <body>
+    <!-- Header Navigation -->
     <section class="hero is-primary is-bold">
       <div class="hero-body">
         <div class="container">
-          <h1 class="title">KAMACON Budget (v1.3)</h1>
+          <h1 class="title">KAMACON Budget (v1.4)</h1>
         </div>
       </div>
       <div class="hero-foot">
         <nav class="tabs is-boxed is-fullwidth">
           <div class="container">
             <ul>
-              <li class="is-active">
-                <a href="index.html">
-                  <span class="icon is-small">📝</span>
-                  <span>Entry Form</span>
-                </a>
-              </li>
-              <li>
-                <a href="filter.html">
-                  <span class="icon is-small">📊</span>
-                  <span>Analytics</span>
-                </a>
-              </li>
+              <li class="is-active"><a><span class="icon is-small">📝</span><span>Entry Form</span></a></li>
+              <li><a href="filter.html"><span class="icon is-small">📊</span><span>Analytics</span></a></li>
             </ul>
           </div>
         </nav>
       </div>
     </section>
-<form id="form" class="container m-4 pl-4" method="POST">
+
+    <!-- Entry Form: Now perfectly aligned and centered -->
+    <form id="form" class="container py-6" method="POST">
       <div class="field">
         <label class="label">Date of Transaction</label>
         <div class="control">
-          <input
-            id="datePicker"
-            class="input"
-            type="date"
-            placeholder="Enter Date"
-            name="Transaction Date"
-          />
+          <input id="datePicker" class="input is-medium" type="date" name="Transaction Date">
         </div>
       </div>
 
       <div class="field">
         <label class="label" id="amount-label">USD Value</label>
         <div class="control">
-          <input
-            id="amount"
-            class="input"
-            type="text"
-            inputmode="decimal"
-            placeholder="Enter Value"
-            step="any"
-            min="0.00"
-            name="Original Value" />
+          <input id="amount" class="input is-medium" type="text" inputmode="decimal" placeholder="0.00" name="Original Value">
         </div>
-      </div>
-
-      <div class="field">
-        <div class="control">
-          <label class="checkbox">
-            <input id="euroCheckbox" type="checkbox" name="EUR Entry" value="Yes" onchange="updateAmountLabel()" /> EUR
-          </label>
-        </div>
+        <label class="checkbox mt-2">
+            <input id="euroCheckbox" type="checkbox" onchange="updateAmountLabel()"> EUR Entry
+        </label>
       </div>
 
       <div id="calculation-summary" style="display: none;">
-          <p>
-              Calculated USD Expense: $<span id="calculated-usd">0.00</span>
-              <span id="split-info" style="font-weight: normal; font-size: 0.8em;"></span>
+          <p class="has-text-primary">
+              Calculated USD: $<span id="calculated-usd">0.00</span>
+              <span id="split-info" class="has-text-grey is-size-7 ml-2"></span>
           </p>
       </div>
-      <div class="field">
+
+      <div class="field mt-4">
         <label class="label">Category</label>
         <div class="control">
-          <select name="Category">
-            <option value="">--Select a category--</option>
-            <option value="Food">🍕 Food</option>
-            <option value="Gas">🚗 Gas</option>
-            <option value="Groceries">🛒 Groceries</option>
-            <option value="Personal Care">💇🏻 Personal Care</option>
-            <option value="Entertainment">🍿 Entertainment</option>
-            <option value="K Funny Money">😜 K Funny Money</option>
-            <option value="M Funny Money">😜 M Funny Money</option>
-            <option value="Travel">🌎 Travel (saving to travel)</option>
-            <option value="Shopping">🛍️ Shopping</option>
-            <option value="Saving">🏦 Saving</option>
-            <option value="Investment">📈 Investment</option>
-            <option value="Other">📥 Other</option>
-          </select>
+          <div class="select is-fullwidth is-medium">
+            <select name="Category">
+                <option value="">--Select a category--</option>
+                <option value="Food">🍕 Food</option>
+                <option value="Gas">🚗 Gas</option>
+                <option value="Groceries">🛒 Groceries</option>
+                <option value="Personal Care">💇🏻 Personal Care</option>
+                <option value="Entertainment">🍿 Entertainment</option>
+                <option value="K Funny Money">😜 K Funny Money</option>
+                <option value="M Funny Money">😜 M Funny Money</option>
+                <option value="Travel">🌎 Travel</option>
+                <option value="Shopping">🛍️ Shopping</option>
+                <option value="Saving">🏦 Saving</option>
+                <option value="Investment">📈 Investment</option>
+                <option value="Other">📥 Other</option>
+            </select>
+          </div>
         </div>
       </div>
 
       <div class="field">
-        <label class="label">Split Expense?</label>
-        <div class="control">
-          <label class="checkbox">
-            <input id="split-expense" type="checkbox" name="Split Expense" value="Yes" onchange="calculateAndDisplay()" /> Check if this was a split expense
-          </label>
-        </div>
+        <label class="checkbox card p-3 is-shadowless border" style="width: 100%; border: 1px solid #dbdbdb;">
+          <input id="split-expense" type="checkbox" name="Split Expense" value="Yes" onchange="calculateAndDisplay()"> 
+          <span class="ml-2">Check if this was a split expense</span>
+        </label>
       </div>
 
       <div class="field">
         <label class="label">Who Paid?</label>
         <div class="control">
-          <label class="radio">
-            <input type="radio" name="Payer" value="Matt" required /> Matt
+          <label class="radio mr-4">
+            <input type="radio" name="Payer" value="Matt" required> Matt
           </label>
           <label class="radio">
-            <input type="radio" name="Payer" value="Katie" required /> Katie
+            <input type="radio" name="Payer" value="Katie" required> Katie
           </label>
         </div>
       </div>
 
       <div class="field">
-        <label class="label">Additional Information</label>
+        <label class="label">Notes</label>
         <div class="control">
-          <textarea
-            class="textarea"
-            placeholder="Any additional information"
-            name="Notes"
-          ></textarea>
+          <textarea class="textarea" placeholder="Optional details..." name="Notes"></textarea>
         </div>
       </div>
 
-      <div class="field is-grouped">
-        <div class="control">
-          <button class="button is-primary" type="submit" id="submit-button">
-            Submit
-          </button>
+      <div class="field is-grouped mt-5">
+        <div class="control is-expanded">
+          <button class="button is-primary is-fullwidth is-medium" type="submit" id="submit-button">Submit</button>
         </div>
-        <div class="control">
-          <button class="button is-danger" type="button" onclick="document.getElementById('form').reset(); calculateAndDisplay();">Cancel</button>
+        <div class="control is-expanded">
+          <button class="button is-light is-fullwidth is-medium" type="button" onclick="document.getElementById('form').reset(); calculateAndDisplay();">Cancel</button>
         </div>
       </div>
     </form>
 
-    <div class="container mt-4" id="splitSummaryContainer"></div>
+    <!-- Shared Settlement Card -->
+    <div class="container" id="splitSummaryContainer"></div>
 
-    <div class="container mt-4">
-      <div class="is-flex is-justify-content-between is-align-items-center mb-3">
+    <!-- Dashboards -->
+    <div class="container mt-6">
+      <div class="is-flex is-justify-content-between is-align-items-center mb-4">
         <h2 class="title is-4 mb-0" id="monthDisplay">Monthly Spending</h2>
-        <div class="field has-addons">
-          <p class="control"><button class="button is-small is-primary is-outlined" onclick="changeMonth(-1)">←</button></p>
-          <p class="control"><button class="button is-small is-primary is-outlined" onclick="goToToday()">Today</button></p>
-          <p class="control"><button class="button is-small is-primary is-outlined" onclick="changeMonth(1)">→</button></p>
+        <div class="buttons has-addons">
+          <button class="button is-small" onclick="changeMonth(-1)">←</button>
+          <button class="button is-small" onclick="goToToday()">Today</button>
+          <button class="button is-small" onclick="changeMonth(1)">→</button>
         </div>
       </div>
-      <div id="categorySummary" class="columns is-mobile is-multiline">
-        <p class="column is-full has-text-grey">Calculating totals...</p>
+      <div id="categorySummary" class="columns is-multiline">
+        <p class="column is-full has-text-centered has-text-grey">Calculating totals...</p>
       </div>
     </div>
 
-    <div class="container mt-4">
+    <div class="container mt-6 pb-6">
       <h2 class="title is-4">Recent Expenses</h2>
-      <div class="table-container">
-        <div id="expenseTableContainer">
-          <p class="has-text-grey">Loading expenses...</p>
-        </div>
+      <div id="expenseTableContainer" class="table-container">
+          <p class="has-text-centered has-text-grey">Loading expenses...</p>
       </div>
     </div>
 
-    <div
-      id="message"
-      style="
-        display: none;
-        margin: 20px;
-        font-weight: bold;
-        color: green;
-        padding: 8px;
-        background-color: beige;
-        border-radius: 4px;
-        border-color: aquamarine;
-      "
-    ></div>
+    <div id="message" style="display: none; position: fixed; top: 20px; right: 20px; z-index: 999; font-weight: bold; padding: 15px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"></div>
 
     <script>
       let viewOffset = 0; // 0 = current month, -1 = last month, etc.
