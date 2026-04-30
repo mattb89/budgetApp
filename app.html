@@ -587,43 +587,39 @@
 
     // ***** This is the logic for grabbing data from the google sheets ***** //
     // Place this function inside your <script> tag in index.html
-    function handleExpensesData(data) {
+function handleExpensesData(data) {
         console.log("Data received from Script:", data);
         
         const summaryContainer = document.getElementById('categorySummary');
         const tableContainer = document.getElementById('expenseTableContainer');
+        const splitSummaryContainer = document.getElementById('splitSummaryContainer');
 
-        // Safety Check: If script fails, show error instead of "Loading"
         if (!data || !data.expenses) {
-            summaryContainer.innerHTML = '<p class="has-text-danger p-4">Error: Could not retrieve data from Sheet.</p>';
-            tableContainer.innerHTML = '<p class="has-text-danger p-4">Check Google Script permissions.</p>';
+            summaryContainer.innerHTML = '<p class="has-text-danger p-4">Error: Could not retrieve data.</p>';
             return;
         }
 
         allExpenses = data.expenses;
         const budgets = data.budgets || {};
 
-        // SYNC TO UTC: Match the viewed month/year to the UTC transactions
         const viewDate = new Date();
         viewDate.setMonth(viewDate.getMonth() + viewOffset);
-        const vMonth = viewDate.getMonth(); // We use local for the navigation...
+        const vMonth = viewDate.getMonth();
         const vYear = viewDate.getFullYear();
 
         let grandTotal = 0;
         let budgetedSpendTotal = 0;
         let totalBudgetLimit = 0;
         const actuals = {};
-
+        
         // Initialize individual spend counters
         let mattTotalSpent = 0;
         let katieTotalSpent = 0;
 
         Object.keys(budgets).forEach(cat => { totalBudgetLimit += budgets[cat]; });
 
-        // Filter all transactions for the month
         const monthlyExpenses = allExpenses.filter(row => {
             const date = new Date(row["Transaction Date"]);
-            // Match using getUTCMonth to avoid the "midnight shift"
             return date.getUTCMonth() === vMonth && date.getUTCFullYear() === vYear;
         });
 
@@ -640,65 +636,49 @@
             if (payer === 'Katie') katieTotalSpent += amount;
         });
 
-        // Calculate Settlement
+        // --- Styled Split Calculation Section ---
         const splitTotal = mattTotalSpent + katieTotalSpent;
         const targetShare = splitTotal / 2;
         const mattDiff = mattTotalSpent - targetShare;
 
-        let mattOwesKatie = 0;
-        let katieOwesMatt = 0;
+        let settlementText = "";
+        let settlementAmount = 0;
 
         if (mattDiff < 0) {
-            mattOwesKatie = Math.abs(mattDiff);
-        } else if (mattDiff > 0) {
-            katieOwesMatt = mattDiff;
+            settlementText = "Matt Owes Katie";
+            settlementAmount = Math.abs(mattDiff);
+        } else {
+            settlementText = "Katie Owes Matt";
+            settlementAmount = mattDiff;
         }
 
-        // Render Settlement Table
-        const splitSummaryContainer = document.getElementById('splitSummaryContainer');
-        let splitHTML = `
-            <div class="columns is-centered">
-                <div class="column is-narrow">
-                    <table class="table is-bordered split-table is-narrow mx-auto">
-                        <thead>
-                            <tr>
-                                <th colspan="2" class="is-size-6 has-text-weight-bold">Matt & Katie Split</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td class="is-size-7 has-text-weight-bold-spreadsheet">Matt Spent</td>
-                                <td class="is-size-7 has-text-right">$${mattTotalSpent.toFixed(2)}</td>
-                            </tr>
-                            <tr>
-                                <td class="is-size-7 has-text-weight-bold-spreadsheet">Katie Spent</td>
-                                <td class="is-size-7 has-text-right">$${katieTotalSpent.toFixed(2)}</td>
-                            </tr>
-                            <tr style="border-top: 2px solid #000;">
-                                <td class="is-size-7 has-text-weight-bold-spreadsheet has-text-centered">TOTAL</td>
-                                <td class="is-size-7 has-text-right">$${splitTotal.toFixed(2)}</td>
-                            </tr>
-                            <tr>
-                                <td class="is-size-7 has-text-centered">Matt Owes Katie</td>
-                                <td class="is-size-7 has-text-right">$${mattOwesKatie.toFixed(2)}</td>
-                            </tr>
-                            <tr>
-                                <td class="is-size-7 has-text-centered">Katie Owes Matt</td>
-                                <td class="is-size-7 has-text-right">$${katieOwesMatt.toFixed(2)}</td>
-                            </tr>
-                        </tbody>
-                    </table>
+        splitSummaryContainer.innerHTML = `
+            <div class="box p-4 mb-5" style="border-left: 8px solid var(--primary, #6366f1); background-color: #fcfcff;">
+                <h3 class="title is-6 mb-3 has-text-grey">Shared Settlement</h3>
+                <div class="columns is-mobile is-multiline">
+                    <div class="column is-6">
+                        <p class="heading mb-1">Matt Spent</p>
+                        <p class="subtitle is-5 has-text-weight-bold">$${mattTotalSpent.toFixed(2)}</p>
+                    </div>
+                    <div class="column is-6">
+                        <p class="heading mb-1">Katie Spent</p>
+                        <p class="subtitle is-5 has-text-weight-bold">$${katieTotalSpent.toFixed(2)}</p>
+                    </div>
+                    <div class="column is-12 pt-0">
+                        <div class="notification is-info is-light p-3 has-text-centered" style="border-radius: 10px;">
+                            <p class="is-size-7 has-text-weight-semibold uppercase mb-1" style="letter-spacing: 1px;">${settlementText.toUpperCase()}</p>
+                            <p class="title is-3">$${settlementAmount.toFixed(2)}</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
-        splitSummaryContainer.innerHTML = splitHTML;
 
-        // Calculate Balance
+        // --- Monthly Budget Capacity Bars ---
         const remainingBalance = totalBudgetLimit - budgetedSpendTotal;
         const overallPercent = totalBudgetLimit > 0 ? Math.min((budgetedSpendTotal / totalBudgetLimit) * 100, 100) : 0;
         let overallBarColor = overallPercent >= 100 ? "is-danger" : (overallPercent > 80 ? "is-warning" : "is-primary");
 
-        // Render Summary
         let summaryHTML = `
             <div class="column is-12">
                 <div class="notification is-primary is-light p-3 mb-2">
@@ -721,6 +701,8 @@
                     </div>
                 </div>
             </div>`;
+
+        // ... (Keep the rest of your category rendering and table logic) ...
 
         // Render Category Bars
         Object.keys(budgets).forEach(cat => {
