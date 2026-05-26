@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CityMapper Studio Pro v3.0</title>
+    <title>CityMapper Studio Pro v4.0</title>
     <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
     <style>
@@ -86,7 +86,21 @@
         </div>
 
         <div class="settings-card">
-            <h3>2. Text Typography</h3>
+            <h3>2. Designer Palette Themes</h3>
+            <div class="input-group">
+                <label>Select Aesthetic Base</label>
+                <select id="theme-select" onchange="applyPresetTheme()">
+                    <option value="gold-dark">High-Contrast Gold & Black</option>
+                    <option value="minimal-gray">Classic Minimalist Gray & White</option>
+                    <option value="lavender-light">Soft Lavender & Off-White</option>
+                    <option value="cyber-neon">Cyberpunk Neon Night</option>
+                    <option value="mid-century-navy">Mid-Century Modern Navy</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="settings-card">
+            <h3>3. Text Typography</h3>
             <div class="toggle-row" style="margin-bottom: 8px; border-bottom: 1px dashed #3d3d3d; padding-bottom: 8px;">
                 <label for="text-visible-toggle" style="font-weight: bold; color: #fff;">Enable Poster Text Elements</label>
                 <input type="checkbox" id="text-visible-toggle" style="width:auto;" checked onchange="updateUI()">
@@ -126,7 +140,7 @@
         </div>
 
         <div class="settings-card">
-            <h3>3. Map Layer Features</h3>
+            <h3>4. Map Layer Features</h3>
             <div class="toggle-row">
                 <label for="layer-highways">Render Primary Highways</label>
                 <input type="checkbox" id="layer-highways" style="width:auto;" checked onchange="toggleMapLayers()">
@@ -150,7 +164,7 @@
         </div>
 
         <div class="settings-card">
-            <h3>4. Edge Soft Fades (Vignette)</h3>
+            <h3>5. Edge Soft Fades (Vignette)</h3>
             <div class="toggle-row">
                 <label for="style-soft-edges">Enable Soft Blurs</label>
                 <input type="checkbox" id="style-soft-edges" style="width:auto;" checked onchange="updateUI()">
@@ -162,7 +176,7 @@
         </div>
 
         <div class="settings-card">
-            <h3>5. Custom Color Profile</h3>
+            <h3>6. Custom Color Controls</h3>
             <div class="row">
                 <div class="input-group" style="flex:1;">
                     <label>Canvas base</label>
@@ -190,7 +204,7 @@
         </div>
 
         <div class="settings-card">
-            <h3>6. Download Export Settings</h3>
+            <h3>7. Download Export Settings</h3>
             <div class="input-group">
                 <label>File Processing Target Size</label>
                 <select id="export-resolution">
@@ -218,21 +232,73 @@
     </div>
 
     <script>
-        // Init WebGL rendering context over OpenFreeMap servers configuration arrays
+        // Init WebGL layout configurations with theme adjustments map layer limits
         const map = new maplibregl.Map({
             container: 'map',
             style: 'https://tiles.openfreemap.org/styles/dark', 
-            center: [9.0908, 48.7297], // Stuttgart Default Center
+            center: [9.0908, 48.7297], 
             zoom: 12.2,
             attributionControl: false,
             preserveDrawingBuffer: true
         });
 
+        // Designer Color Archetypes Configuration Maps Matrix
+        const themePresets = {
+            'gold-dark': { bg: '#000000', highway: '#d4af37', roads: '#b0912d', textMain: '#d4af37', textSub: '#888888', baseStyle: 'https://tiles.openfreemap.org/styles/dark' },
+            'minimal-gray': { bg: '#ffffff', highway: '#333333', roads: '#888888', textMain: '#111111', textSub: '#666666', baseStyle: 'https://tiles.openfreemap.org/styles/liberty' },
+            'lavender-light': { bg: '#f4f3ef', highway: '#5b507a', roads: '#a39ba8', textMain: '#3f3857', textSub: '#7d7491', baseStyle: 'https://tiles.openfreemap.org/styles/positron' },
+            'cyber-neon': { bg: '#0b0c10', highway: '#00ffcc', roads: '#1f2833', textMain: '#66fcf1', textSub: '#c5c6c7', baseStyle: 'https://tiles.openfreemap.org/styles/dark' },
+            'mid-century-navy': { bg: '#1f3a52', highway: '#ffcb9a', roads: '#4b86b4', textMain: '#f7ee94', textSub: '#d1e8e2', baseStyle: 'https://tiles.openfreemap.org/styles/dark' }
+        };
+
         map.on('style.load', () => {
+            adjustDetailRetentionParameters();
             toggleMapLayers();
         });
 
-        // The Master UI Layout Updates Processor Function
+        // Force maximum grid lines density scaling rules even when zoomed way out
+        function adjustDetailRetentionParameters() {
+            if (!map.isStyleLoaded()) return;
+            const roadLayers = ['transportation', 'road_major', 'highway', 'road_minor', 'road', 'transportation_name'];
+            
+            roadLayers.forEach(layer => {
+                if (map.getLayer(layer)) {
+                    // Inject overscaling parameters dynamically onto layout models styles arrays
+                    map.setPaintProperty(layer, 'line-width', [
+                        'interpolate', ['linear'], ['zoom'],
+                        1, 1.2,
+                        10, 1.8,
+                        14, 2.5
+                    ]);
+                    map.setPaintProperty(layer, 'line-opacity', 0.95);
+                }
+            });
+        }
+
+        function applyPresetTheme() {
+            const selectedKey = document.getElementById('theme-select').value;
+            const preset = themePresets[selectedKey];
+
+            // Map Style Sheet Endpoint verification check logic
+            if (map.getStyle().sprite !== preset.baseStyle) {
+                map.setStyle(preset.baseStyle);
+            }
+
+            // Sync structural parameters directly to option wheel objects values fields
+            document.getElementById('color-bg').value = preset.bg;
+            document.getElementById('color-highways').value = preset.highway;
+            document.getElementById('color-roads').value = preset.roads;
+            document.getElementById('color-text-main').value = preset.textMain;
+            document.getElementById('color-text-sub').value = preset.textSub;
+
+            // Wait a split-second for core map context changes before forcing canvas sync
+            setTimeout(() => {
+                adjustDetailRetentionParameters();
+                toggleMapLayers();
+            }, 200);
+        }
+
+        // Master UI Styling Updates Function
         function updateUI() {
             const bgVal = document.getElementById('color-bg').value;
             const highwayColorVal = document.getElementById('color-highways').value;
@@ -250,7 +316,6 @@
             const typographyControls = document.getElementById('typography-controls-wrapper');
             const textColorRow = document.getElementById('text-color-picker-row');
 
-            // Toggle interface controls and label panels visibility completely
             if (textVisible) {
                 typographyControls.style.display = "block";
                 textColorRow.style.display = "flex";
@@ -267,11 +332,9 @@
                 labelBlock.classList.add('hidden-element');
             }
             
-            // Adjust basic physical poster framework bounds
             document.getElementById('poster-frame').style.backgroundColor = bgVal;
             labelBlock.style.backgroundColor = textFloatToggle ? 'transparent' : bgVal;
             
-            // Render text properties layout configurations
             const mainLabel = document.getElementById('label-main');
             mainLabel.innerText = document.getElementById('text-main-input').value;
             mainLabel.style.color = mainTextVal;
@@ -284,7 +347,6 @@
             subLabel.style.color = subTextVal;
             subLabel.style.fontFamily = fontVal;
 
-            // Soft Vignette Edge Shadow Gradients calculations
             const vignetteToggle = document.getElementById('style-soft-edges').checked;
             const vignetteMask = document.getElementById('map-vignette');
             const vignetteIntensity = document.getElementById('vignette-intensity').value;
@@ -299,17 +361,14 @@
                 vignetteMask.style.display = "none";
             }
 
-            // Sync structural parameters directly to open free map vector stylesheet engines
             if (map.isStyleLoaded()) {
-                // Style Primary Highways
-                const highwayLayers = ['transportation', 'road_major', 'highway'];
+                const highwayLayers = ['transportation', 'road_major', 'highway', 'primary'];
                 highwayLayers.forEach(layer => {
                     if (map.getLayer(layer)) {
                         map.setPaintProperty(layer, 'line-color', highwayColorVal);
                     }
                 });
 
-                // Style Minor Residential streets
                 const minorRoadLayers = ['road_minor', 'road', 'transportation_name'];
                 minorRoadLayers.forEach(layer => {
                     if (map.getLayer(layer)) {
@@ -319,7 +378,7 @@
             }
         }
 
-        // Vector Map Geometry Layers Filter Switchboard
+        // Vector Feature Filter Switchboards
         function toggleMapLayers() {
             if (!map.isStyleLoaded()) return;
 
@@ -331,19 +390,15 @@
 
             const allLayers = map.getStyle().layers;
             allLayers.forEach(layer => {
-                // Toggles Place/Street names
                 if (layer.type === 'symbol') {
                     map.setLayoutProperty(layer.id, 'visibility', showLabels ? 'visible' : 'none');
                 }
-                // Toggles Buildings
                 if (layer.id.includes('building') || layer.source-layer === 'building') {
                     map.setLayoutProperty(layer.id, 'visibility', showBuildings ? 'visible' : 'none');
                 }
-                // Toggles Water bodies
                 if (layer.id.includes('water') || layer.source-layer === 'water') {
                     map.setLayoutProperty(layer.id, 'visibility', showWater ? 'visible' : 'none');
                 }
-                // Toggles Core Roads/Highways hierarchies mapping
                 if (layer.id.includes('road') || layer.id.includes('transportation')) {
                     if (layer.id.includes('major') || layer.id.includes('highway') || layer.id.includes('primary')) {
                         map.setLayoutProperty(layer.id, 'visibility', showHighways ? 'visible' : 'none');
@@ -397,7 +452,7 @@
                     resultsBox.appendChild(div);
                 });
             } catch (err) {
-                console.error("Geocoding service fetch exception parsing: ", err);
+                console.error("Geocoding fetch exception context trace: ", err);
             }
         }
 
@@ -407,7 +462,7 @@
             }
         });
 
-        // Memory-Safe Downstream Canvas Export Processing Pipeline Engine
+        // Memory-Safe High-Resolution Generation pipeline
         function processExportPipeline() {
             const exportResMode = document.getElementById('export-resolution').value;
             const exportBtn = document.getElementById('btn-export');
@@ -423,7 +478,6 @@
                     const baseWidth = originalCanvas.width;
                     const baseHeight = originalCanvas.height;
 
-                    // Gather target structural dimensions configurations
                     const textVisible = document.getElementById('text-visible-toggle').checked;
                     const textFloatToggle = document.getElementById('text-position-toggle').checked;
                     const softEdgeToggle = document.getElementById('style-soft-edges').checked;
@@ -436,7 +490,6 @@
                     exportCanvas.height = (baseHeight + (textFloatToggle ? 0 : labelBlockHeightSrc)) * renderMultiplier; 
                     const ctx = exportCanvas.getContext('2d');
 
-                    // Pull current interface variable parameters state configurations
                     const bgStyle = document.getElementById('color-bg').value;
                     const mainTextClass = document.getElementById('color-text-main').value;
                     const subTextClass = document.getElementById('color-text-sub').value;
@@ -446,11 +499,9 @@
                     const fontSizeMainSrc = parseInt(document.getElementById('size-font-main').value);
                     const letterSpacingSrc = parseInt(document.getElementById('letter-spacing-main').value);
 
-                    // Fill canvas backing elements structures
                     ctx.fillStyle = bgStyle;
                     ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
 
-                    // Maps view buffer allocation parameters pass
                     let mapDestHeight = baseHeight * renderMultiplier;
                     if (textVisible && textFloatToggle) {
                         mapDestHeight = exportCanvas.height; 
@@ -459,7 +510,6 @@
                     }
                     ctx.drawImage(originalCanvas, 0, 0, exportCanvas.width, mapDestHeight);
 
-                    // Re-render soft edge vignette blurs layer bounds on export canvas
                     if (softEdgeToggle) {
                         ctx.globalCompositeOperation = "source-over";
                         const shadowBorder = (vignetteIntensity / 1.2) * renderMultiplier;
@@ -468,10 +518,9 @@
                         ctx.shadowBlur = vignetteIntensity * renderMultiplier;
                         ctx.shadowColor = bgStyle;
                         ctx.strokeRect(shadowBorder/2, shadowBorder/2, exportCanvas.width - shadowBorder, mapDestHeight - shadowBorder);
-                        ctx.shadowBlur = 0; // Reset parameters buffer matrix
+                        ctx.shadowBlur = 0; 
                     }
 
-                    // Render typography onto canvas metrics matrices if enabled layout is checked
                     if (textVisible) {
                         ctx.textAlign = 'center';
                         ctx.textBaseline = 'middle';
@@ -479,7 +528,6 @@
                         if (textFloatToggle) {
                             const overlayCenterY = exportCanvas.height - (75 * renderMultiplier);
                             
-                            // Translucent typography background bounding card elements layout
                             ctx.fillStyle = "rgba(0,0,0,0.75)";
                             ctx.fillRect(exportCanvas.width * 0.12, overlayCenterY - (40 * renderMultiplier), exportCanvas.width * 0.76, 85 * renderMultiplier);
                             
@@ -493,7 +541,6 @@
                             ctx.letterSpacing = "2px";
                             ctx.fillText(subtitleValue, exportCanvas.width / 2, overlayCenterY + (18 * renderMultiplier));
                         } else {
-                            // Standard baseline text banner layout parameters configuration passes
                             const bannerCenterY = mapDestHeight + ((exportCanvas.height - mapDestHeight) / 2);
                             
                             ctx.fillStyle = mainTextClass;
@@ -508,15 +555,14 @@
                         }
                     }
 
-                    // Download downstream trigger activation
                     const downloadLink = document.createElement('a');
                     const filenamePrefix = textVisible ? titleValue.replace(/\s+/g, '_') : "Raw_Grid";
                     downloadLink.download = `${filenamePrefix}_MapArt_${exportResMode}.png`;
                     downloadLink.href = exportCanvas.toDataURL('image/png');
                     downloadLink.click();
                 } catch (error) {
-                    console.error("Export pipeline matrix processing execution exception: ", error);
-                    alert("Export Error: Clear storage caching buffers and execute standard format layout sizing first.");
+                    console.error("Export compiling engine failure context: ", error);
+                    alert("Export Error. Processing standard web bounds frame layouts instead.");
                 } finally {
                     exportBtn.innerText = "Generate Art File";
                     exportBtn.disabled = false;
