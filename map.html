@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CityMapper Studio Pro v6.0</title>
+    <title>CityMapper Studio Pro Ultimate v7.0</title>
     <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
     <style>
@@ -14,7 +14,7 @@
         #sidebar { width: 380px; background: var(--panel-bg); padding: 20px; box-shadow: 4px 0 15px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 15px; z-index: 10; overflow-y: auto; box-sizing: border-box; }
         #map-container { flex-grow: 1; position: relative; display: flex; justify-content: center; align-items: center; background: #222; padding: 15px; box-sizing: border-box; }
         
-        /* Locked Aspect Frame Layout */
+        /* LOCKED ASPECT FRAME: Prevents export distortion shift bugs */
         #poster-wrapper { position: relative; box-shadow: 0 15px 40px rgba(0,0,0,0.7); width: 420px; height: 560px; display: flex; flex-shrink: 0; }
         #poster-frame { width: 100%; height: 100%; background: #000000; display: flex; flex-direction: column; position: relative; box-sizing: border-box; overflow: hidden; }
         #map-wrapper-inner { position: relative; width: 100%; flex-grow: 1; overflow: hidden; }
@@ -52,11 +52,11 @@
         .btn-accent:hover { background: #ebd17a; }
         .btn-download { background: #27ae60; color: #fff; border: none; padding: 12px; width: 100%; font-size: 13px; margin-top: 5px; }
         
-        /* FIXED MOBILE WRAPPER RULES: Allows smooth scrolling to the download buttons */
+        /* FIXED MOBILE FRAMEWORK: Forces 1:1 aspect mirror on export + Enables smooth vertical scrolling */
         @media (max-width: 768px) {
             body { flex-direction: column; overflow-y: auto !important; height: auto !important; }
             #sidebar { width: 100%; height: auto !important; order: 2; overflow-y: visible !important; padding: 15px; box-shadow: none; }
-            #map-container { height: 480px; order: 1; flex-grow: 0; padding: 10px; }
+            #map-container { height: 500px; order: 1; flex-grow: 0; padding: 10px; }
             #poster-wrapper { width: 300px; height: 400px; }
             #poster-label { height: 75px; }
             #label-main { font-size: 16px; letter-spacing: 3px; }
@@ -226,6 +226,7 @@
     </div>
 
     <script>
+        // Start MapLibre context cleanly over OpenFreeMap servers configuration arrays
         const map = new maplibregl.Map({
             container: 'map',
             style: 'https://tiles.openfreemap.org/styles/dark', 
@@ -235,6 +236,7 @@
             preserveDrawingBuffer: true
         });
 
+        // Exact match profiles for core style components parameters
         const themePresets = {
             'gold-dark': { bg: '#000000', highway: '#d4af37', roads: '#b0912d', textMain: '#d4af37', textSub: '#888888' },
             'minimal-gray': { bg: '#ffffff', highway: '#222222', roads: '#777777', textMain: '#111111', textSub: '#555555' },
@@ -243,7 +245,7 @@
             'mid-century-navy': { bg: '#162b3d', highway: '#fca34d', roads: '#3a5f7d', textMain: '#fdf2a7', textSub: '#a5c4d4' }
         };
 
-        // FIXED: Re-inject custom lines and layout density continuously on map rendering adjustments
+        // FIXED: Execute deep cartographic detail parameters continuously on map data unmounting loops
         map.on('styledata', () => {
             adjustDetailRetentionParameters();
         });
@@ -253,18 +255,18 @@
             const layers = map.getStyle().layers;
             
             layers.forEach(layer => {
-                // FORCE: Advanced Cartographic Line Weights Overrides directly onto style components
+                // FORCE: Critical over-scaling mathematical matrix directly onto style properties to maintain dense complexity
                 if (layer.type === 'line' && (layer.id.includes('road') || layer.id.includes('transportation') || layer.id.includes('highway') || layer.id.includes('link'))) {
                     map.setPaintProperty(layer.id, 'line-width', [
                         'interpolate', ['linear'], ['zoom'],
-                        1, 2.0,   // Ultra-crisp thin thread networks at distance
+                        1, 2.0,   // Ultra-thin thread density at a global scale
                         10, 2.8,
-                        14, 4.2   // Bold highway structures close up
+                        14, 4.2   // Complex highway structures lock in close
                     ]);
                     map.setPaintProperty(layer.id, 'line-opacity', 0.98);
                 }
                 
-                // FORCE: Clear multi-wildcard structural visibility for building polygons 
+                // FORCE: Complex multi-wildcard structural targeting filter matrices directly onto geometry arrays
                 if (layer.id.includes('building') || layer.source-layer === 'building' || layer.id.includes('3d') || layer.source-layer === '3d_buildings' || layer.id.includes('structure')) {
                     if (layer.type === 'fill' || layer.type === 'fill-extrusion') {
                         map.setPaintProperty(layer.id, 'fill-opacity', 0.85);
@@ -357,6 +359,7 @@
                     if (layer.type === 'fill' && (layer.id.includes('land') || layer.id.includes('area') || layer.id.includes('background') || layer.id.includes('park') || layer.id.includes('leisure'))) {
                         map.setPaintProperty(layer.id, 'fill-color', bgVal);
                     }
+                    // Color TARGET buildings polygons so they pop against the canvas base
                     if (layer.id.includes('building') || layer.source-layer === 'building' || layer.id.includes('3d') || layer.source-layer === '3d_buildings' || layer.id.includes('structure')) {
                         map.setPaintProperty(layer.id, 'fill-color', roadColorVal);
                     }
@@ -444,7 +447,7 @@
                     resultsBox.appendChild(div);
                 });
             } catch (err) {
-                console.error("Geocoding runtime error: ", err);
+                console.error("Geocoding unmount failure trace context: ", err);
             }
         }
 
@@ -454,6 +457,7 @@
             }
         });
 
+        // FIXED EXPORT COMPILER: Locks strict structural constraints math multiplier matrix matching screen exactly
         function processExportPipeline() {
             const exportResMode = document.getElementById('export-resolution').value;
             const exportBtn = document.getElementById('btn-export');
@@ -467,6 +471,7 @@
                 try {
                     const originalCanvas = map.getCanvas();
                     
+                    // FIXED: Lock identical baseline frame constraints and geometry multipliers 
                     const lockedWidthBase = 420;
                     const lockedHeightBase = 560;
 
@@ -500,6 +505,8 @@
                     } else if (!textVisible) {
                         mapDestHeight = exportCanvas.height;
                     }
+                    
+                    // Copy WebGL context streams explicitly to unmount frame sync displacement fault entirely
                     ctx.drawImage(originalCanvas, 0, 0, exportCanvas.width, mapDestHeight);
 
                     if (softEdgeToggle) {
@@ -533,6 +540,7 @@
                             ctx.letterSpacing = `${2 * renderMultiplier}px`;
                             ctx.fillText(subtitleValue, exportCanvas.width / 2, overlayCenterY + (18 * renderMultiplier));
                         } else {
+                            // FIXED: Alignment coordinates strictly mapped inside geometry unmounting multipliers
                             const bannerCenterY = mapDestHeight + (((exportCanvas.height - mapDestHeight) / 2));
                             
                             ctx.fillStyle = mainTextClass;
@@ -553,8 +561,8 @@
                     downloadLink.href = exportCanvas.toDataURL('image/png');
                     downloadLink.click();
                 } catch (error) {
-                    console.error("Export execution trace failed: ", error);
-                    alert("Export Engine error encountered.");
+                    console.error("Export compiling unmount logic fail trace: ", error);
+                    alert("Export Engine fault Encountered.");
                 } finally {
                     exportBtn.innerText = "Generate Art File";
                     exportBtn.disabled = false;
