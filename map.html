@@ -2,117 +2,171 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CityMapper Studio v2.0</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CityMapper Studio Professional</title>
     <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
     <style>
-        body { margin: 0; padding: 0; font-family: 'Helvetica Neue', Arial, sans-serif; background: #121212; color: #fff; display: flex; height: 100vh; overflow: hidden; }
-        #sidebar { width: 360px; background: #1c1c1c; padding: 20px; box-shadow: 4px 0 15px rgba(0,0,0,0.6); display: flex; flex-direction: column; gap: 20px; z-index: 10; overflow-y: auto; }
-        #map-container { flex-grow: 1; position: relative; display: flex; justify-content: center; align-items: center; background: #262626; padding: 20px; }
+        :root { --accent: #d4af37; --bg-dark: #121212; --panel-bg: #1c1c1c; }
+        body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, sans-serif; background: var(--bg-dark); color: #fff; display: flex; flex-direction: row; height: 100vh; overflow: hidden; }
         
-        /* The Canvas Poster Frame */
-        #poster-wrapper { position: relative; box-shadow: 0 25px 60px rgba(0,0,0,0.8); }
-        #poster-frame { width: 480px; height: 640px; background: #000000; display: flex; flex-direction: column; position: relative; box-sizing: border-box; }
-        #map { flex-grow: 1; width: 100%; }
+        /* Responsive Viewport Layout System */
+        #sidebar { width: 360px; background: var(--panel-bg); padding: 20px; box-shadow: 4px 0 15px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 15px; z-index: 10; overflow-y: auto; box-sizing: border-box; }
+        #map-container { flex-grow: 1; position: relative; display: flex; justify-content: center; align-items: center; background: #222; padding: 15px; box-sizing: border-box; }
         
-        /* Poster Typography Label Layout */
-        #poster-label { height: 110px; background: #000000; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 10px 20px; box-sizing: border-box; transition: background 0.3s; }
-        #label-main { font-size: 24px; font-weight: bold; letter-spacing: 5px; text-transform: uppercase; margin: 0; color: #d4af37; transition: color 0.3s; font-family: 'Georgia', serif; }
-        #label-sub { font-size: 11px; letter-spacing: 2px; margin: 6px 0 0 0; color: #888888; transition: color 0.3s; }
+        /* The Physical Poster Mockup Structure & Custom Fade Mask Vignette */
+        #poster-wrapper { position: relative; box-shadow: 0 15px 40px rgba(0,0,0,0.7); max-width: 100%; max-height: 100%; aspect-ratio: 3/4; display: flex; }
+        #poster-frame { width: 390px; height: 520px; background: #000000; display: flex; flex-direction: column; position: relative; box-sizing: border-box; overflow: hidden; transition: background 0.3s; }
+        #map-wrapper-inner { position: relative; width: 100%; flex-grow: 1; overflow: hidden; }
+        #map { width: 100%; height: 100%; }
         
-        /* UI Styling Components */
-        h2 { font-size: 14px; text-transform: uppercase; letter-spacing: 1.5px; margin: 0 0 12px 0; color: #e5e5e5; border-bottom: 1px solid #333; padding-bottom: 6px; }
-        .input-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
-        .row { display: flex; gap: 8px; }
+        /* The Vignette Overlay: Fading map edges smoothly into the poster background color */
+        #map-vignette { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; box-shadow: inset 0 0 40px 15px #000000; transition: box-shadow 0.3s; z-index: 2; }
+        
+        /* Floating Overlays vs Fixed Label Blocks */
+        #poster-label { height: 95px; background: #000000; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 10px; box-sizing: border-box; z-index: 3; transition: background 0.3s; }
+        #poster-label.floating { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.75) !important; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(5px); height: auto; min-width: 70%; padding: 15px; }
+        
+        #label-main { font-size: 22px; font-weight: bold; letter-spacing: 4px; text-transform: uppercase; margin: 0; color: var(--accent); }
+        #label-sub { font-size: 10px; letter-spacing: 1.5px; margin: 5px 0 0 0; color: #888; }
+        
+        /* Collapsible Form Group UI Blocks */
+        .settings-card { background: #262626; border-radius: 6px; padding: 12px; border: 1px solid #333; }
+        .settings-card h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 10px 0; color: #bbb; border-bottom: 1px solid #3d3d3d; padding-bottom: 4px; }
+        .input-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+        .input-group:last-child { margin-bottom: 0; }
+        .row { display: flex; gap: 6px; }
         .row input { flex-grow: 1; }
-        label { font-size: 11px; text-transform: uppercase; color: #999; letter-spacing: 1px; }
-        input, select { background: #2a2a2a; border: 1px solid #444; padding: 10px; color: #fff; border-radius: 4px; font-size: 13px; box-sizing: border-box; }
-        input:focus, select:focus { border-color: #d4af37; outline: none; }
+        label { font-size: 10px; text-transform: uppercase; color: #888; letter-spacing: 0.5px; }
+        input, select { background: #333; border: 1px solid #444; padding: 8px 10px; color: #fff; border-radius: 4px; font-size: 13px; box-sizing: border-box; width: 100%; }
+        input[type="color"] { padding: 2px; height: 34px; cursor: pointer; }
         
-        /* Search Auto-complete Suggestions Box */
-        #search-results { background: #2a2a2a; border: 1px solid #444; border-top: none; max-height: 150px; overflow-y: auto; display: none; border-radius: 0 0 4px 4px; position: absolute; width: 320px; z-index: 15; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-        .search-item { padding: 8px 12px; cursor: pointer; font-size: 12px; border-bottom: 1px solid #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .search-item:hover { background: #3a3a3a; color: #d4af37; }
+        /* Auto-complete Box */
+        #search-results { background: #333; border: 1px solid #444; border-top: none; max-height: 140px; overflow-y: auto; display: none; position: absolute; width: calc(100% - 40px); z-index: 20; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+        .search-item { padding: 8px 10px; cursor: pointer; font-size: 12px; border-bottom: 1px solid #262626; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .search-item:hover { background: #444; color: var(--accent); }
         
-        /* Buttons */
-        button { background: #333; color: #fff; border: 1px solid #555; padding: 10px 14px; font-weight: bold; border-radius: 4px; cursor: pointer; transition: all 0.2s; text-transform: uppercase; letter-spacing: 1px; font-size: 11px; }
-        button:hover { background: #444; border-color: #d4af37; }
-        .btn-primary { background: #d4af37; color: #000; border: none; }
-        .btn-primary:hover { background: #e5c158; color: #000; }
-        .btn-success { background: #27ae60; color: #fff; border: none; font-size: 13px; padding: 14px; width: 100%; margin-top: 5px; }
-        .btn-success:hover { background: #2ecc71; }
+        /* Toggles and Buttons */
+        .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; }
+        .toggle-row label { cursor: pointer; }
+        button { background: #3d3d3d; color: #fff; border: 1px solid #555; padding: 8px 12px; font-weight: bold; border-radius: 4px; cursor: pointer; font-size: 11px; text-transform: uppercase; }
+        button:hover { border-color: var(--accent); }
+        .btn-accent { background: var(--accent); color: #000; border: none; }
+        .btn-accent:hover { background: #ebd17a; }
+        .btn-download { background: #27ae60; color: #fff; border: none; padding: 12px; width: 100%; font-size: 13px; margin-top: 5px; }
+        
+        /* Mobile Breakpoints & Bottom Sheets Rules */
+        @media (max-width: 768px) {
+            body { flex-direction: column; }
+            #sidebar { width: 100%; height: 45vh; order: 2; box-shadow: 0 -4px 15px rgba(0,0,0,0.5); padding: 15px; }
+            #map-container { height: 55vh; order: 1; flex-grow: 0; }
+            #poster-frame { width: 280px; height: 373px; }
+            #poster-label { height: 75px; }
+            #label-main { font-size: 16px; letter-spacing: 3px; }
+            #label-sub { font-size: 8px; }
+            #poster-label.floating { bottom: 15px; padding: 8px; }
+            #search-results { width: calc(100% - 70px); }
+        }
     </style>
 </head>
 <body>
 
     <div id="sidebar">
-        <div>
-            <h2>1. Location Search</h2>
+        <div class="settings-card">
+            <h3>1. Target Location</h3>
             <div class="input-group" style="position: relative;">
-                <label>Search City Name</label>
                 <div class="row">
-                    <input type="text" id="search-input" placeholder="e.g., Paris, Florence, Austin..." autocomplete="off">
-                    <button onclick="searchLocation()" class="btn-primary">Find</button>
+                    <input type="text" id="search-input" placeholder="Search City Name..." autocomplete="off">
+                    <button onclick="searchLocation()" class="btn-accent">Find</button>
                 </div>
                 <div id="search-results"></div>
             </div>
         </div>
 
-        <div>
-            <h2>2. Custom Labels</h2>
+        <div class="settings-card">
+            <h3>2. Layout & Fonts</h3>
             <div class="input-group">
-                <label>Main Title</label>
-                <input type="text" id="text-main-input" value="San Antonio" oninput="updateText()">
+                <label>Main Heading Text</label>
+                <input type="text" id="text-main-input" value="San Antonio" oninput="updateUI()">
             </div>
             <div class="input-group">
-                <label>Subtitle / Coords</label>
-                <input type="text" id="text-sub-input" value="TEXAS | 29.4241° N, 98.4936° W" oninput="updateText()">
+                <label>Subtext Details</label>
+                <input type="text" id="text-sub-input" value="TEXAS | 29.4241° N, 98.4936° W" oninput="updateUI()">
+            </div>
+            <div class="input-group">
+                <label>Typography Font Family</label>
+                <select id="font-select" onchange="updateUI()">
+                    <option value="Georgia, serif">Classic Serif (Georgia)</option>
+                    <option value="-apple-system, sans-serif">Modern Clean (Sans-Serif)</option>
+                    <option value="'Courier New', monospace">Minimal Tech (Monospace)</option>
+                </select>
+            </div>
+            <div class="toggle-row">
+                <label for="text-position-toggle">Overlay Text On Map</label>
+                <input type="checkbox" id="text-position-toggle" style="width:auto;" onchange="updateUI()">
             </div>
         </div>
 
-        <div>
-            <h2>3. Aesthetics & Theme</h2>
-            <div class="input-group">
-                <label>Map Theme Engine</label>
-                <select id="theme-select" onchange="changeTheme()">
-                    <option value="https://tiles.openfreemap.org/styles/dark">High-Contrast Dark</option>
-                    <option value="https://tiles.openfreemap.org/styles/liberty">Classic Minimalist Light</option>
-                    <option value="https://tiles.openfreemap.org/styles/positron">Pastel Light/Lavender</option>
-                </select>
+        <div class="settings-card">
+            <h3>3. Map Layer Controls</h3>
+            <div class="toggle-row">
+                <label for="layer-buildings">Render Building Footprints</label>
+                <input type="checkbox" id="layer-buildings" style="width:auto;" checked onchange="toggleMapLayers()">
             </div>
-            <div class="input-group">
-                <label>Poster Background Color</label>
-                <input type="color" id="bg-color-picker" value="#000000" oninput="updateColors()">
+            <div class="toggle-row">
+                <label for="layer-labels">Show Streets & Place Labels</label>
+                <input type="checkbox" id="layer-labels" style="width:auto;" onchange="toggleMapLayers()">
             </div>
-            <div class="input-group">
-                <label>Main Text Color</label>
-                <input type="color" id="text-color-picker" value="#d4af37" oninput="updateColors()">
-            </div>
-            <div class="input-group">
-                <label>Subtext Color</label>
-                <input type="color" id="subtext-color-picker" value="#888888" oninput="updateColors()">
+            <div class="toggle-row">
+                <label for="style-soft-edges">Soft Blurred Vignette Edges</label>
+                <input type="checkbox" id="style-soft-edges" style="width:auto;" checked onchange="updateUI()">
             </div>
         </div>
 
-        <div>
-            <h2>4. Export File Configurations</h2>
+        <div class="settings-card">
+            <h3>4. Color Palette</h3>
+            <div class="row">
+                <div class="input-group" style="flex:1;">
+                    <label>Background</label>
+                    <input type="color" id="color-bg" value="#000000" oninput="updateUI()">
+                </div>
+                <div class="input-group" style="flex:1;">
+                    <label>Road Grids</label>
+                    <input type="color" id="color-roads" value="#d4af37" oninput="updateUI()">
+                </div>
+            </div>
+            <div class="row" style="margin-top: 8px;">
+                <div class="input-group" style="flex:1;">
+                    <label>Heading Text</label>
+                    <input type="color" id="color-text-main" value="#d4af37" oninput="updateUI()">
+                </div>
+                <div class="input-group" style="flex:1;">
+                    <label>Subtitle Text</label>
+                    <input type="color" id="color-text-sub" value="#888888" oninput="updateUI()">
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-card">
+            <h3>5. Order Fulfillment</h3>
             <div class="input-group">
-                <label>Target Print Size</label>
-                <select id="export-size">
-                    <option value="preview">Quick Web Preview (Screen Res)</option>
-                    <option value="print-12x18">Standard Print: 12" x 18" (3600 x 5400 px)</option>
-                    <option value="print-24x36" selected>Full Resolution Print: 24" x 36" (7200 x 10800 px)</option>
+                <label>File Export Configurations</label>
+                <select id="export-resolution">
+                    <option value="screen">Standard Web Preview (Fast PNG)</option>
+                    <option value="print-high">Commercial Print Optimized (300 DPI File)</option>
                 </select>
             </div>
-            <button class="btn-success" onclick="exportPoster()">Generate & Download</button>
+            <button class="btn-download btn-accent" id="btn-export" onclick="processExportPipeline()">Generate Art File</button>
         </div>
     </div>
 
     <div id="map-container">
         <div id="poster-wrapper">
             <div id="poster-frame">
-                <div id="map"></div>
+                <div id="map-wrapper-inner">
+                    <div id="map"></div>
+                    <div id="map-vignette"></div>
+                </div>
                 <div id="poster-label">
                     <div id="label-main">San Antonio</div>
                     <div id="label-sub">TEXAS | 29.4241° N, 98.4936° W</div>
@@ -122,46 +176,101 @@
     </div>
 
     <script>
-        // Initialize MapLibre Map with preserveDrawingBuffer enabled (Crucial for Canvas exports)
+        // Init MapLibre context configurations
         const map = new maplibregl.Map({
             container: 'map',
             style: 'https://tiles.openfreemap.org/styles/dark', 
             center: [-98.4936, 29.4241], 
             zoom: 12.5,
             attributionControl: false,
-            preserveDrawingBuffer: true 
+            preserveDrawingBuffer: true
         });
 
-        // Live Text Content Syncing
-        function updateText() {
-            document.getElementById('label-main').innerText = document.getElementById('text-main-input').value;
-            document.getElementById('label-sub').innerText = document.getElementById('text-sub-input').value;
+        // Safe pipeline layer execution configuration values
+        map.on('style.load', () => {
+            toggleMapLayers();
+        });
+
+        // Master UI Styling Updates Function
+        function updateUI() {
+            const bgVal = document.getElementById('color-bg').value;
+            const roadColorVal = document.getElementById('color-roads').value;
+            const mainTextVal = document.getElementById('color-text-main').value;
+            const subTextVal = document.getElementById('color-text-sub').value;
+            const fontVal = document.getElementById('font-select').value;
+            
+            // Layout Framework Manipulations
+            document.getElementById('poster-frame').style.backgroundColor = bgVal;
+            document.getElementById('poster-label').style.backgroundColor = bgVal;
+            
+            // Heading Node Properties Updates
+            const mainLabel = document.getElementById('label-main');
+            mainLabel.innerText = document.getElementById('text-main-input').value;
+            mainLabel.style.color = mainTextVal;
+            mainLabel.style.fontFamily = fontVal;
+
+            // Subtitle Node Properties Updates
+            const subLabel = document.getElementById('label-sub');
+            subLabel.innerText = document.getElementById('text-sub-input').value;
+            subLabel.style.color = subTextVal;
+            subLabel.style.fontFamily = fontVal;
+
+            // Toggle Label Overlays vs Baseline Blocks
+            const textFloatToggle = document.getElementById('text-position-toggle').checked;
+            const labelBlock = document.getElementById('poster-label');
+            if (textFloatToggle) {
+                labelBlock.classList.add('floating');
+            } else {
+                labelBlock.classList.remove('floating');
+            }
+
+            // Adjust Edge Fading Mask Styles Dynamically based on background color choice
+            const vignetteToggle = document.getElementById('style-soft-edges').checked;
+            const vignetteMask = document.getElementById('map-vignette');
+            if (vignetteToggle) {
+                vignetteMask.style.display = "block";
+                vignetteMask.style.boxShadow = `inset 0 0 50px 20px ${bgVal}`;
+            } else {
+                vignetteMask.style.display = "none";
+            }
+
+            // Dynamically style vector line structures based on user inputs color properties
+            if (map.isStyleLoaded()) {
+                const roadLayers = ['transportation', 'transportation_name', 'road'];
+                roadLayers.forEach(layer => {
+                    if (map.getLayer(layer)) {
+                        map.setPaintProperty(layer, 'line-color', roadColorVal);
+                    }
+                });
+            }
         }
 
-        // Live Aesthetic Palette Controls
-        function updateColors() {
-            const bg = document.getElementById('bg-color-picker').value;
-            const text = document.getElementById('text-color-picker').value;
-            const subtext = document.getElementById('subtext-color-picker').value;
+        // Vector Feature Filter Switchboards
+        function toggleMapLayers() {
+            if (!map.isStyleLoaded()) return;
 
-            document.getElementById('poster-frame').style.backgroundColor = bg;
-            document.getElementById('poster-label').style.backgroundColor = bg;
-            document.getElementById('label-main').style.color = text;
-            document.getElementById('label-sub').style.color = subtext;
+            const showBuildings = document.getElementById('layer-buildings').checked;
+            const showLabels = document.getElementById('layer-labels').checked;
+
+            // Map styling adjustments directly on vector style sheets properties 
+            const allLayers = map.getStyle().layers;
+            allLayers.forEach(layer => {
+                if (layer.type === 'symbol') {
+                    map.setLayoutProperty(layer.id, 'visibility', showLabels ? 'visible' : 'none');
+                }
+                if (layer.id.includes('building') || layer.source-layer === 'building') {
+                    map.setLayoutProperty(layer.id, 'visibility', showBuildings ? 'visible' : 'none');
+                }
+            });
+            updateUI();
         }
 
-        // Map Theme Swapper
-        function changeTheme() {
-            const selectedStyle = document.getElementById('theme-select').value;
-            map.setStyle(selectedStyle);
-        }
-
-        // Dynamic OpenStreetMap Geocoding Search Engine
+        // Location Search geocoder engine configuration
         async function searchLocation() {
             const query = document.getElementById('search-input').value;
             if (!query) return;
 
-            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`;
+            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=4`;
             const resultsBox = document.getElementById('search-results');
             resultsBox.innerHTML = '';
 
@@ -170,7 +279,7 @@
                 const data = await response.json();
 
                 if (data.length === 0) {
-                    resultsBox.innerHTML = '<div class="search-item">No locations found.</div>';
+                    resultsBox.innerHTML = '<div class="search-item">No results.</div>';
                     resultsBox.style.display = 'block';
                     return;
                 }
@@ -185,7 +294,6 @@
                         const lon = parseFloat(item.lon);
                         map.flyTo({ center: [lon, lat], zoom: 12.5 });
                         
-                        // Parse name values cleanly for user convenience
                         const nameArray = item.display_name.split(',');
                         document.getElementById('text-main-input').value = nameArray[0].trim();
                         
@@ -193,7 +301,7 @@
                         const lonDir = lon >= 0 ? 'E' : 'W';
                         document.getElementById('text-sub-input').value = `${(nameArray[2] || nameArray[1] || '').trim().toUpperCase()} | ${Math.abs(lat).toFixed(4)}° ${latDir}, ${Math.abs(lon).toFixed(4)}° ${lonDir}`;
                         
-                        updateText();
+                        updateUI();
                         resultsBox.style.display = 'none';
                     };
                     resultsBox.appendChild(div);
@@ -203,80 +311,115 @@
             }
         }
 
-        // Hide autocomplete search options when clicking outside the panel boundaries
+        // Hide search results context box when tapping alternative fields
         document.addEventListener('click', (e) => {
             if (e.target.id !== 'search-input') {
                 document.getElementById('search-results').style.display = 'none';
             }
         });
 
-        // High-Resolution Synchronized Map Image Rendering & Download Engine
-        function exportPoster() {
-            const sizeMode = document.getElementById('export-size').value;
+        // The Memory-Safe Commercial File Generation Pipeline
+        function processExportPipeline() {
+            const exportResMode = document.getElementById('export-resolution').value;
+            const exportBtn = document.getElementById('btn-export');
             
-            // Define targeted export dimensions based on selected target printing aspect ratios
-            let targetWidth = 480;
-            let targetHeight = 640;
-            
-            if (sizeMode === 'print-12x18') {
-                targetWidth = 3600;
-                targetHeight = 5400;
-            } else if (sizeMode === 'print-24x36') {
-                targetWidth = 7200;
-                targetHeight = 10800;
-            }
+            // Provide UI loading feedback loops
+            exportBtn.innerText = "Processing File...";
+            exportBtn.disabled = true;
 
-            // Create off-screen rendering canvas buffer target
-            const exportCanvas = document.createElement('canvas');
-            exportCanvas.width = targetWidth;
-            exportCanvas.height = targetHeight;
-            const ctx = exportCanvas.getContext('2d');
+            // Mathematical multipliers to optimize data buffers based on target output limits
+            const renderMultiplier = (exportResMode === 'print-high') ? 4 : 1.5;
 
-            // Gather structural styling parameters
-            const bgStyle = document.getElementById('bg-color-picker').value;
-            const mainTextClass = document.getElementById('text-color-picker').value;
-            const subTextClass = document.getElementById('subtext-color-picker').value;
-            const titleValue = document.getElementById('label-main').innerText;
-            const subtitleValue = document.getElementById('label-sub').innerText;
+            setTimeout(() => {
+                try {
+                    const originalCanvas = map.getCanvas();
+                    const baseWidth = originalCanvas.width;
+                    const baseHeight = originalCanvas.height;
 
-            // Fill off-screen canvas base panel background bounds
-            ctx.fillStyle = bgStyle;
-            ctx.fillRect(0, 0, targetWidth, targetHeight);
+                    const exportCanvas = document.createElement('canvas');
+                    exportCanvas.width = baseWidth * renderMultiplier;
+                    exportCanvas.height = (baseHeight + 110) * renderMultiplier; 
+                    const ctx = exportCanvas.getContext('2d');
 
-            // Fetch the primary active WebGL map viewport layer canvas stream 
-            const mapCanvas = map.getCanvas();
-            
-            // Calculate height splits to account for the typographic lower banner block
-            const labelBlockPercentage = 110 / 640; 
-            const mapRenderHeight = targetHeight * (1 - labelBlockPercentage);
-            const labelBlockHeight = targetHeight * labelBlockPercentage;
+                    // Variables mapping
+                    const bgStyle = document.getElementById('color-bg').value;
+                    const mainTextClass = document.getElementById('color-text-main').value;
+                    const subTextClass = document.getElementById('color-text-sub').value;
+                    const titleValue = document.getElementById('label-main').innerText;
+                    const subtitleValue = document.getElementById('label-sub').innerText;
+                    const fontSelected = document.getElementById('font-select').value;
+                    const textFloatToggle = document.getElementById('text-position-toggle').checked;
+                    const softEdgeToggle = document.getElementById('style-soft-edges').checked;
 
-            // Draw the map graphic canvas directly into upper section mapping window
-            ctx.drawImage(mapCanvas, 0, 0, targetWidth, mapRenderHeight);
+                    // Build base frame geometry bounds
+                    ctx.fillStyle = bgStyle;
+                    ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
 
-            // Draw Typographic Elements onto the output canvas layout structures
-            const labelCenterY = mapRenderHeight + (labelBlockHeight / 2);
+                    // Map View Render Window Boundaries calculation pass
+                    let mapDestHeight = baseHeight * renderMultiplier;
+                    if (textFloatToggle) {
+                        mapDestHeight = exportCanvas.height; // Fill entire vertical layout
+                    }
+                    ctx.drawImage(originalCanvas, 0, 0, exportCanvas.width, mapDestHeight);
 
-            // Main Header Element Configuration
-            const mainFontSize = Math.floor(targetHeight * (24 / 640));
-            ctx.fillStyle = mainTextClass;
-            ctx.font = `bold ${mainFontSize}px Georgia, serif`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(titleValue, targetWidth / 2, labelCenterY - (mainFontSize / 3));
+                    // Replicate the Vignette/Soft Edge shadow blending on export buffer
+                    if (softEdgeToggle) {
+                        ctx.globalCompositeOperation = "source-over";
+                        // Inner inset shadow emulation mask passes
+                        const shadowBorder = 40 * renderMultiplier;
+                        ctx.strokeStyle = bgStyle;
+                        ctx.lineWidth = shadowBorder;
+                        ctx.shadowBlur = 30 * renderMultiplier;
+                        ctx.shadowColor = bgStyle;
+                        ctx.strokeRect(shadowBorder/2, shadowBorder/2, exportCanvas.width - shadowBorder, mapDestHeight - shadowBorder);
+                        // Reset shadows properties parameters safely
+                        ctx.shadowBlur = 0;
+                    }
 
-            // Subtitle Element Configuration
-            const subFontSize = Math.floor(targetHeight * (11 / 640));
-            ctx.fillStyle = subTextClass;
-            ctx.font = `${subFontSize}px Arial, sans-serif`;
-            ctx.fillText(subtitleValue, targetWidth / 2, labelCenterY + (mainFontSize * 0.75));
+                    // Process Typography Labels bounding text metrics offsets arrays
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
 
-            // Trigger safe automated download download parameters
-            const dataUrl = exportCanvas.toDataURL('image/png');
-            const downloadLink = document.createElement('a');
-            downloadLink.download = `${titleValue.replace(/\s+/g, '_')}_Custom_Map_${sizeMode}.png`;
-            downloadLink.href = dataUrl;
-            downloadLink.click();
+                    if (textFloatToggle) {
+                        // Position text overlays neatly inside lower margins bounds blocks
+                        const overlayCenterY = exportCanvas.height - (80 * renderMultiplier);
+                        ctx.fillStyle = "rgba(0,0,0,0.8)";
+                        ctx.fillRect(exportCanvas.width * 0.15, overlayCenterY - (40 * renderMultiplier), exportCanvas.width * 0.7, 85 * renderMultiplier);
+                        
+                        ctx.fillStyle = mainTextClass;
+                        ctx.font = `bold ${Math.floor(20 * renderMultiplier)}px ${fontSelected}`;
+                        ctx.fillText(titleValue, exportCanvas.width / 2, overlayCenterY - (10 * renderMultiplier));
+                        
+                        ctx.fillStyle = subTextClass;
+                        ctx.font = `${Math.floor(9 * renderMultiplier)}px ${fontSelected}`;
+                        ctx.fillText(subtitleValue, exportCanvas.width / 2, overlayCenterY + (15 * renderMultiplier));
+                    } else {
+                        // Use Standard Bottom Frame Blocks
+                        const bannerCenterY = mapDestHeight + ((exportCanvas.height - mapDestHeight) / 2);
+                        
+                        ctx.fillStyle = mainTextClass;
+                        ctx.font = `bold ${Math.floor(22 * renderMultiplier)}px ${fontSelected}`;
+                        ctx.fillText(titleValue, exportCanvas.width / 2, bannerCenterY - (12 * renderMultiplier));
+                        
+                        ctx.fillStyle = subTextClass;
+                        ctx.font = `${Math.floor(10 * renderMultiplier)}px ${fontSelected}`;
+                        ctx.fillText(subtitleValue, exportCanvas.width / 2, bannerCenterY + (12 * renderMultiplier));
+                    }
+
+                    // Execute downstream download anchor injection triggers
+                    const downloadLink = document.createElement('a');
+                    downloadLink.download = `${titleValue.replace(/\s+/g, '_')}_MapArt_${exportResMode}.png`;
+                    downloadLink.href = exportCanvas.toDataURL('image/png');
+                    downloadLink.click();
+                } catch (error) {
+                    console.error("Export compiler pipeline failure: ", error);
+                    alert("Export Error: The mobile data engine requires a preview format first to clear local memory buffers.");
+                } finally {
+                    // Reset UI states buttons labels properties strings natively
+                    exportBtn.innerText = "Generate Art File";
+                    exportBtn.disabled = false;
+                }
+            }, 150);
         }
     </script>
 </body>
