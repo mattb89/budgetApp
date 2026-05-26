@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CityMapper Studio Elite v9.0</title>
+    <title>CityMapper Studio Elite v10.0</title>
     <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
     <style>
@@ -14,17 +14,29 @@
         #sidebar { width: 380px; background: var(--panel-bg); padding: 20px; box-shadow: 4px 0 15px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 14px; z-index: 10; overflow-y: auto; box-sizing: border-box; }
         #map-container { flex-grow: 1; position: relative; display: flex; justify-content: center; align-items: center; background: #222; padding: 15px; box-sizing: border-box; }
         
-        /* LOCKED ASPECT FRAME: Total alignment lock */
+        /* POSTER FRAME SETTINGS: Fixed presentation dimensions */
         #poster-wrapper { position: relative; box-shadow: 0 15px 40px rgba(0,0,0,0.7); width: 420px; height: 560px; display: flex; flex-shrink: 0; }
         #poster-frame { width: 100%; height: 100%; background: #000000; display: flex; flex-direction: column; position: relative; box-sizing: border-box; overflow: hidden; }
-        #map-wrapper-inner { position: relative; width: 100%; flex-grow: 1; overflow: hidden; }
+        
+        /* EXTENDED FIELD-OF-VIEW ENGINE: High-res internal rendering target compressed by CSS */
+        #map-wrapper-inner { 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            width: 200%;     /* Renders double the physical area to catch more map data */
+            height: 200%;    
+            transform: scale(0.5); /* Compresses the massive map layer down to fit the frame */
+            transform-origin: top left;
+            overflow: hidden; 
+        }
         #map { width: 100%; height: 100%; }
         
-        #map-vignette { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; box-shadow: inset 0 0 40px 15px #000000; z-index: 2; }
+        /* Vignette adjusted to sit flawlessly over the double-scale layout */
+        #map-vignette { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; box-shadow: inset 0 0 80px 30px #000000; z-index: 2; }
         
-        /* Labels Framework */
-        #poster-label { height: 105px; background: #000000; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 10px; box-sizing: border-box; z-index: 3; }
-        #poster-label.floating { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(5px); height: auto; min-width: 70%; padding: 15px; }
+        /* Typography Elements Layered Over the Scale Matrix */
+        #poster-label { height: 105px; background: #000000; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 10px; box-sizing: border-box; z-index: 3; position: absolute; bottom: 0; left: 0; width: 100%; }
+        #poster-label.floating { bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(5px); height: auto; min-width: 70%; padding: 15px; }
         #poster-label.hidden-element { display: none !important; }
         
         #label-main { font-size: 24px; font-weight: bold; letter-spacing: 5px; text-transform: uppercase; margin: 0; color: var(--accent); line-height: 1.2; }
@@ -33,7 +45,6 @@
         .settings-card { background: #262626; border-radius: 6px; padding: 12px; border: 1px solid #333; }
         .settings-card h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 10px 0; color: #bbb; border-bottom: 1px solid #3d3d3d; padding-bottom: 4px; }
         .input-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
-        .input-group:last-child { margin-bottom: 0; }
         .row { display: flex; gap: 6px; }
         .row input { flex-grow: 1; }
         label { font-size: 10px; text-transform: uppercase; color: #888; letter-spacing: 0.5px; }
@@ -46,7 +57,6 @@
         .search-item:hover { background: #444; color: var(--accent); }
         
         .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; }
-        .toggle-row label { cursor: pointer; }
         button { background: #3d3d3d; color: #fff; border: 1px solid #555; padding: 8px 12px; font-weight: bold; border-radius: 4px; cursor: pointer; font-size: 11px; text-transform: uppercase; }
         button:hover { border-color: var(--accent); }
         .btn-accent { background: var(--accent); color: #000; border: none; }
@@ -55,17 +65,6 @@
         
         #legal-attribution { font-size: 10px; color: #555; text-align: center; margin-top: auto; padding-top: 15px; border-top: 1px dashed #333; line-height: 1.4; }
         #legal-attribution a { color: #777; text-decoration: none; }
-        
-        @media (max-width: 768px) {
-            body { flex-direction: column; overflow-y: auto !important; height: auto !important; }
-            #sidebar { width: 100%; height: auto !important; order: 2; overflow-y: visible !important; padding: 15px; }
-            #map-container { height: 490px; order: 1; flex-grow: 0; padding: 10px; }
-            #poster-wrapper { width: 300px; height: 400px; }
-            #poster-label { height: 75px; }
-            #label-main { font-size: 16px; letter-spacing: 3px; }
-            #label-sub { font-size: 8px; }
-            #search-results { width: calc(100% - 70px); }
-        }
     </style>
 </head>
 <body>
@@ -168,7 +167,7 @@
             </div>
             <div class="input-group" id="vignette-intensity-group">
                 <label>Vignette Fade Intensity</label>
-                <input type="range" id="vignette-intensity" min="10" max="80" value="45" oninput="updateUI()">
+                <input type="range" id="vignette-intensity" min="20" max="150" value="70" oninput="updateUI()">
             </div>
         </div>
 
@@ -234,7 +233,7 @@
     </div>
 
     <script>
-        // FIXED: Locked base initialization zoom directly to a crisp 14.2 to guarantee building data streaming from CDN
+        // FIXED: Initialized at high density threshold (14.2) to grab every building footprint automatically
         const map = new maplibregl.Map({
             container: 'map',
             style: 'https://tiles.openfreemap.org/styles/dark', 
@@ -261,18 +260,18 @@
             const layers = map.getStyle().layers;
             
             layers.forEach(layer => {
-                // FIXED: Thinned down road street weights explicitly to leave wide, breathing corridors for buildings
+                // FIXED: Drastically thinned lines down to clean hair-thin widths to ensure max breathing room for dense objects
                 if (layer.type === 'line' && (layer.id.includes('road') || layer.id.includes('transportation') || layer.id.includes('highway') || layer.id.includes('link'))) {
                     map.setPaintProperty(layer.id, 'line-width', [
                         'interpolate', ['linear'], ['zoom'],
-                        1, 0.2,   
-                        10, 0.5,  // Thread weights at mid distances
-                        14, 1.2   // Keeps major avenues thin and elegant
+                        1, 0.1,   
+                        10, 0.3,  
+                        14, 0.6,   /* Micro-thin accents to match the scale explosion */
+                        16, 1.0
                     ]);
-                    map.setPaintProperty(layer.id, 'line-opacity', 0.80);
+                    map.setPaintProperty(layer.id, 'line-opacity', 0.75);
                 }
                 
-                // FIXED: Strip native map font layers completely so city/highway shields don't bleed onto design grids
                 if (layer.type === 'symbol') {
                     map.setLayoutProperty(layer.id, 'visibility', 'none');
                 }
@@ -280,7 +279,7 @@
                 if (layer.id.includes('building') || layer.source-layer === 'building' || layer.id.includes('3d') || layer.source-layer === '3d_buildings' || layer.id.includes('structure')) {
                     if (layer.type === 'fill' || layer.type === 'fill-extrusion') {
                         map.setLayoutProperty(layer.id, 'visibility', 'visible');
-                        map.setPaintProperty(layer.id, 'fill-opacity', 0.85); 
+                        map.setPaintProperty(layer.id, 'fill-opacity', 0.90); 
                     }
                 }
             });
@@ -316,6 +315,7 @@
             const typographyControls = document.getElementById('typography-controls-wrapper');
             const textColorRow = document.getElementById('text-color-picker-row');
 
+            // Handle typography positioning inside the new scale container layout
             if (textVisible) {
                 typographyControls.style.display = "block";
                 textColorRow.style.display = "flex";
@@ -323,8 +323,10 @@
                 
                 if (textFloatToggle) {
                     labelBlock.classList.add('floating');
+                    labelBlock.style.backgroundColor = 'rgba(0,0,0,0.85)';
                 } else {
                     labelBlock.classList.remove('floating');
+                    labelBlock.style.backgroundColor = bgVal;
                 }
             } else {
                 typographyControls.style.display = "none";
@@ -333,7 +335,6 @@
             }
             
             document.getElementById('poster-frame').style.backgroundColor = bgVal;
-            labelBlock.style.backgroundColor = textFloatToggle ? 'transparent' : bgVal;
             
             const mainLabel = document.getElementById('label-main');
             mainLabel.innerText = document.getElementById('text-main-input').value.toUpperCase(); 
@@ -355,7 +356,7 @@
             if (vignetteToggle) {
                 vignetteIntensityGroup.style.display = "flex";
                 vignetteMask.style.display = "block";
-                vignetteMask.style.boxShadow = `inset 0 0 ${vignetteIntensity}px ${Math.floor(vignetteIntensity/2)}px ${bgVal}`;
+                vignetteMask.style.boxShadow = `inset 0 0 ${vignetteIntensity}px ${Math.floor(vignetteIntensity/2.5)}px ${bgVal}`;
             } else {
                 vignetteIntensityGroup.style.display = "none";
                 vignetteMask.style.display = "none";
@@ -442,7 +443,7 @@
                     div.onclick = () => {
                         const lat = parseFloat(item.lat);
                         const lon = parseFloat(item.lon);
-                        map.flyTo({ center: [lon, lat], zoom: 14.2 }); // Lock search jumps directly into high detail thresholds
+                        map.flyTo({ center: [lon, lat], zoom: 14.2 }); 
                         
                         const nameArray = item.display_name.split(',');
                         document.getElementById('text-main-input').value = nameArray[0].trim();
@@ -457,7 +458,7 @@
                     resultsBox.appendChild(div);
                 });
             } catch (err) {
-                console.error("Geocoding fetch parsing error: ", err);
+                console.error("Geocoding lookup exception: ", err);
             }
         }
 
@@ -471,9 +472,10 @@
             const exportResMode = document.getElementById('export-resolution').value;
             const exportBtn = document.getElementById('btn-export');
             
-            exportBtn.innerText = "Processing...";
+            exportBtn.innerText = "Processing Grid...";
             exportBtn.disabled = true;
 
+            // Render multiplier adjusts for print quality directly from the base dimensions
             const renderMultiplier = (exportResMode === 'print-high') ? 4 : 1.5;
 
             setTimeout(() => {
@@ -492,7 +494,7 @@
                     
                     const exportCanvas = document.createElement('canvas');
                     exportCanvas.width = lockedWidthBase * renderMultiplier;
-                    exportCanvas.height = (lockedHeightBase + (textFloatToggle ? 0 : labelBlockHeightSrc)) * renderMultiplier; 
+                    exportCanvas.height = lockedHeightBase * renderMultiplier; 
                     const ctx = exportCanvas.getContext('2d');
 
                     const bgStyle = document.getElementById('color-bg').value;
@@ -507,12 +509,12 @@
                     ctx.fillStyle = bgStyle;
                     ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
 
-                    let mapDestHeight = lockedHeightBase * renderMultiplier;
-                    if (textVisible && textFloatToggle) {
-                        mapDestHeight = exportCanvas.height; 
-                    } else if (!textVisible) {
-                        mapDestHeight = exportCanvas.height;
+                    // FIXED: Captures the double-scale layout engine calculations perfectly for high-resolution canvas output
+                    let mapDestHeight = exportCanvas.height;
+                    if (textVisible && !textFloatToggle) {
+                        mapDestHeight = exportCanvas.height - (labelBlockHeightSrc * renderMultiplier);
                     }
+                    
                     ctx.drawImage(originalCanvas, 0, 0, exportCanvas.width, mapDestHeight);
 
                     if (softEdgeToggle) {
@@ -546,8 +548,12 @@
                             ctx.letterSpacing = `${2 * renderMultiplier}px`;
                             ctx.fillText(subtitleValue, exportCanvas.width / 2, overlayCenterY + (18 * renderMultiplier));
                         } else {
-                            const bannerCenterY = mapDestHeight + (((exportCanvas.height - mapDestHeight) / 2));
+                            // Draws text block safely beneath map footprint bounds
+                            const bannerCenterY = mapDestHeight + ((exportCanvas.height - mapDestHeight) / 2);
                             
+                            ctx.fillStyle = bgStyle;
+                            ctx.fillRect(0, mapDestHeight, exportCanvas.width, exportCanvas.height - mapDestHeight);
+
                             ctx.fillStyle = mainTextClass;
                             ctx.font = `bold ${Math.floor(fontSizeMainSrc * renderMultiplier)}px ${fontSelected}`;
                             ctx.letterSpacing = `${letterSpacingSrc * renderMultiplier}px`;
@@ -561,13 +567,13 @@
                     }
 
                     const downloadLink = document.createElement('a');
-                    const filenamePrefix = textVisible ? titleValue.replace(/\s+/g, '_') : "Raw_Grid";
-                    downloadLink.download = `${filenamePrefix}_MapArt_${exportResMode}.png`;
+                    const filenamePrefix = textVisible ? titleValue.replace(/\s+/g, '_') : "Wide_Grid";
+                    downloadLink.download = `${filenamePrefix}_StudioArt_${exportResMode}.png`;
                     downloadLink.href = exportCanvas.toDataURL('image/png');
                     downloadLink.click();
                 } catch (error) {
-                    console.error("Export failure log: ", error);
-                    alert("Export Engine error encountered.");
+                    console.error("Export Engine system error: ", error);
+                    alert("Export calculations encountered a layout exception.");
                 } finally {
                     exportBtn.innerText = "Generate Art File";
                     exportBtn.disabled = false;
