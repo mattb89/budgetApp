@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CityMapper Studio Pro v4.0</title>
+    <title>CityMapper Studio Pro v4.5</title>
     <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
     <style>
@@ -25,13 +25,13 @@
         
         /* Poster Text Typography Label Blocks */
         #poster-label { height: 105px; background: #000000; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 10px; box-sizing: border-box; z-index: 3; }
-        #poster-label.floating { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.75); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(5px); height: auto; min-width: 70%; padding: 15px; }
+        #poster-label.floating { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(5px); height: auto; min-width: 70%; padding: 15px; }
         #poster-label.hidden-element { display: none !important; }
         
         #label-main { font-size: 24px; font-weight: bold; letter-spacing: 5px; text-transform: uppercase; margin: 0; color: var(--accent); line-height: 1.2; }
         #label-sub { font-size: 10px; letter-spacing: 2px; margin: 6px 0 0 0; color: #888; line-height: 1.2; }
         
-        /* Collapsible Form/Settings Cards */
+        /* Collapsible Settings Cards */
         .settings-card { background: #262626; border-radius: 6px; padding: 12px; border: 1px solid #333; }
         .settings-card h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 10px 0; color: #bbb; border-bottom: 1px solid #3d3d3d; padding-bottom: 4px; }
         .input-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
@@ -57,7 +57,6 @@
         .btn-accent:hover { background: #ebd17a; }
         .btn-download { background: #27ae60; color: #fff; border: none; padding: 12px; width: 100%; font-size: 13px; margin-top: 5px; }
         
-        /* Mobile Breakpoints Viewports rules */
         @media (max-width: 768px) {
             body { flex-direction: column; }
             #sidebar { width: 100%; height: 48vh; order: 2; box-shadow: 0 -4px 15px rgba(0,0,0,0.5); padding: 15px; }
@@ -86,14 +85,14 @@
         </div>
 
         <div class="settings-card">
-            <h3>2. Designer Palette Themes</h3>
+            <h3>2. Designer Themes</h3>
             <div class="input-group">
-                <label>Select Aesthetic Base</label>
+                <label>Select Template Base</label>
                 <select id="theme-select" onchange="applyPresetTheme()">
                     <option value="gold-dark">High-Contrast Gold & Black</option>
-                    <option value="minimal-gray">Classic Minimalist Gray & White</option>
-                    <option value="lavender-light">Soft Lavender & Off-White</option>
-                    <option value="cyber-neon">Cyberpunk Neon Night</option>
+                    <option value="minimal-gray">Minimalist Charcoal & Gray</option>
+                    <option value="lavender-light">Soft Lavender Aesthetic</option>
+                    <option value="cyber-neon">Cyberpunk Neon</option>
                     <option value="mid-century-navy">Mid-Century Modern Navy</option>
                 </select>
             </div>
@@ -232,7 +231,7 @@
     </div>
 
     <script>
-        // Init WebGL layout configurations with theme adjustments map layer limits
+        // Start map engine cleanly
         const map = new maplibregl.Map({
             container: 'map',
             style: 'https://tiles.openfreemap.org/styles/dark', 
@@ -242,13 +241,13 @@
             preserveDrawingBuffer: true
         });
 
-        // Designer Color Archetypes Configuration Maps Matrix
+        // Exact match profiles for style properties
         const themePresets = {
-            'gold-dark': { bg: '#000000', highway: '#d4af37', roads: '#b0912d', textMain: '#d4af37', textSub: '#888888', baseStyle: 'https://tiles.openfreemap.org/styles/dark' },
-            'minimal-gray': { bg: '#ffffff', highway: '#333333', roads: '#888888', textMain: '#111111', textSub: '#666666', baseStyle: 'https://tiles.openfreemap.org/styles/liberty' },
-            'lavender-light': { bg: '#f4f3ef', highway: '#5b507a', roads: '#a39ba8', textMain: '#3f3857', textSub: '#7d7491', baseStyle: 'https://tiles.openfreemap.org/styles/positron' },
-            'cyber-neon': { bg: '#0b0c10', highway: '#00ffcc', roads: '#1f2833', textMain: '#66fcf1', textSub: '#c5c6c7', baseStyle: 'https://tiles.openfreemap.org/styles/dark' },
-            'mid-century-navy': { bg: '#1f3a52', highway: '#ffcb9a', roads: '#4b86b4', textMain: '#f7ee94', textSub: '#d1e8e2', baseStyle: 'https://tiles.openfreemap.org/styles/dark' }
+            'gold-dark': { bg: '#000000', highway: '#d4af37', roads: '#b0912d', textMain: '#d4af37', textSub: '#888888' },
+            'minimal-gray': { bg: '#ffffff', highway: '#222222', roads: '#777777', textMain: '#111111', textSub: '#555555' },
+            'lavender-light': { bg: '#f3f1f7', highway: '#4a3b63', roads: '#8c829e', textMain: '#36294d', textSub: '#6b617a' },
+            'cyber-neon': { bg: '#08090f', highway: '#00ffcc', roads: '#1a233a', textMain: '#00ffcc', textSub: '#8fa0b2' },
+            'mid-century-navy': { bg: '#162b3d', highway: '#fca34d', roads: '#3a5f7d', textMain: '#fdf2a7', textSub: '#a5c4d4' }
         };
 
         map.on('style.load', () => {
@@ -256,21 +255,21 @@
             toggleMapLayers();
         });
 
-        // Force maximum grid lines density scaling rules even when zoomed way out
+        // Retains fine road networks and layout widths tightly when zooming out
         function adjustDetailRetentionParameters() {
             if (!map.isStyleLoaded()) return;
-            const roadLayers = ['transportation', 'road_major', 'highway', 'road_minor', 'road', 'transportation_name'];
+            const style = map.getStyle();
             
-            roadLayers.forEach(layer => {
-                if (map.getLayer(layer)) {
-                    // Inject overscaling parameters dynamically onto layout models styles arrays
-                    map.setPaintProperty(layer, 'line-width', [
+            style.layers.forEach(layer => {
+                if (layer.type === 'line' && (layer.id.includes('road') || layer.id.includes('transportation') || layer.id.includes('highway') || layer.id.includes('link'))) {
+                    // Force minimum widths mathematically to maintain dense grid styles when zooming far out
+                    map.setPaintProperty(layer.id, 'line-width', [
                         'interpolate', ['linear'], ['zoom'],
-                        1, 1.2,
-                        10, 1.8,
-                        14, 2.5
+                        8, 1.0,
+                        11, 1.6,
+                        14, 2.8
                     ]);
-                    map.setPaintProperty(layer, 'line-opacity', 0.95);
+                    map.setPaintProperty(layer.id, 'line-opacity', 0.95);
                 }
             });
         }
@@ -279,26 +278,16 @@
             const selectedKey = document.getElementById('theme-select').value;
             const preset = themePresets[selectedKey];
 
-            // Map Style Sheet Endpoint verification check logic
-            if (map.getStyle().sprite !== preset.baseStyle) {
-                map.setStyle(preset.baseStyle);
-            }
-
-            // Sync structural parameters directly to option wheel objects values fields
             document.getElementById('color-bg').value = preset.bg;
             document.getElementById('color-highways').value = preset.highway;
             document.getElementById('color-roads').value = preset.roads;
             document.getElementById('color-text-main').value = preset.textMain;
             document.getElementById('color-text-sub').value = preset.textSub;
 
-            // Wait a split-second for core map context changes before forcing canvas sync
-            setTimeout(() => {
-                adjustDetailRetentionParameters();
-                toggleMapLayers();
-            }, 200);
+            updateUI();
         }
 
-        // Master UI Styling Updates Function
+        // Master UI Styling Updates Function with robust wildcard layer targeting overrides
         function updateUI() {
             const bgVal = document.getElementById('color-bg').value;
             const highwayColorVal = document.getElementById('color-highways').value;
@@ -361,24 +350,33 @@
                 vignetteMask.style.display = "none";
             }
 
+            // ROBUST OVERRIDES: Explicitly scan and dye ALL OpenFreeMap theme layers safely
             if (map.isStyleLoaded()) {
-                const highwayLayers = ['transportation', 'road_major', 'highway', 'primary'];
-                highwayLayers.forEach(layer => {
-                    if (map.getLayer(layer)) {
-                        map.setPaintProperty(layer, 'line-color', highwayColorVal);
+                const layers = map.getStyle().layers;
+                layers.forEach(layer => {
+                    // Dye background layers
+                    if (layer.type === 'background') {
+                        map.setPaintProperty(layer.id, 'background-color', bgVal);
                     }
-                });
-
-                const minorRoadLayers = ['road_minor', 'road', 'transportation_name'];
-                minorRoadLayers.forEach(layer => {
-                    if (map.getLayer(layer)) {
-                        map.setPaintProperty(layer, 'line-color', roadColorVal);
+                    // Dye structural land/area polygons
+                    if (layer.type === 'fill' && (layer.id.includes('land') || layer.id.includes('area') || layer.id.includes('background'))) {
+                        map.setPaintProperty(layer.id, 'fill-color', bgVal);
+                    }
+                    // Dye primary road networks
+                    if (layer.type === 'line' && (layer.id.includes('motorway') || layer.id.includes('trunk') || layer.id.includes('primary') || layer.id.includes('major'))) {
+                        map.setPaintProperty(layer.id, 'line-color', highwayColorVal);
+                    }
+                    // Dye secondary local grids
+                    if (layer.type === 'line' && (layer.id.includes('minor') || layer.id.includes('residential') || layer.id.includes('service') || layer.id.includes('secondary') || layer.id.includes('tertiary') || layer.id.includes('street') || layer.id.includes('road'))) {
+                        if (!layer.id.includes('motorway') && !layer.id.includes('trunk') && !layer.id.includes('primary')) {
+                            map.setPaintProperty(layer.id, 'line-color', roadColorVal);
+                        }
                     }
                 });
             }
         }
 
-        // Vector Feature Filter Switchboards
+        // Vector Feature Layer Filters
         function toggleMapLayers() {
             if (!map.isStyleLoaded()) return;
 
@@ -399,8 +397,8 @@
                 if (layer.id.includes('water') || layer.source-layer === 'water') {
                     map.setLayoutProperty(layer.id, 'visibility', showWater ? 'visible' : 'none');
                 }
-                if (layer.id.includes('road') || layer.id.includes('transportation')) {
-                    if (layer.id.includes('major') || layer.id.includes('highway') || layer.id.includes('primary')) {
+                if (layer.id.includes('road') || layer.id.includes('transportation') || layer.id.includes('highway') || layer.id.includes('link')) {
+                    if (layer.id.includes('major') || layer.id.includes('highway') || layer.id.includes('primary') || layer.id.includes('motorway') || layer.id.includes('trunk')) {
                         map.setLayoutProperty(layer.id, 'visibility', showHighways ? 'visible' : 'none');
                     } else {
                         map.setLayoutProperty(layer.id, 'visibility', showRoads ? 'visible' : 'none');
@@ -410,7 +408,6 @@
             updateUI();
         }
 
-        // OpenStreetMap Nominatim Geocoder Parser Endpoint
         async function searchLocation() {
             const query = document.getElementById('search-input').value;
             if (!query) return;
@@ -452,7 +449,7 @@
                     resultsBox.appendChild(div);
                 });
             } catch (err) {
-                console.error("Geocoding fetch exception context trace: ", err);
+                console.error("Geocoding fetch exception: ", err);
             }
         }
 
@@ -462,7 +459,6 @@
             }
         });
 
-        // Memory-Safe High-Resolution Generation pipeline
         function processExportPipeline() {
             const exportResMode = document.getElementById('export-resolution').value;
             const exportBtn = document.getElementById('btn-export');
@@ -561,8 +557,8 @@
                     downloadLink.href = exportCanvas.toDataURL('image/png');
                     downloadLink.click();
                 } catch (error) {
-                    console.error("Export compiling engine failure context: ", error);
-                    alert("Export Error. Processing standard web bounds frame layouts instead.");
+                    console.error("Export compiling engine failure: ", error);
+                    alert("Export Error. Processing standard web preview size instead.");
                 } finally {
                     exportBtn.innerText = "Generate Art File";
                     exportBtn.disabled = false;
