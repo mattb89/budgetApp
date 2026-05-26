@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CityMapper Studio Masterpiece v12.0</title>
+    <title>CityMapper Studio Masterpiece v13.0</title>
     <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
     <style>
-        :root { --accent: #d4af37; --bg-dark: #121212; --panel-bg: #1c1c1c; }
+        :root { --accent: #00ffcc; --bg-dark: #121212; --panel-bg: #1c1c1c; }
         body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg-dark); color: #fff; display: flex; flex-direction: row; height: 100vh; overflow: hidden; }
         
         /* Layout Structure */
@@ -43,32 +43,31 @@
         .row input { flex-grow: 1; }
         label { font-size: 10px; text-transform: uppercase; color: #888; letter-spacing: 0.5px; }
         input, select { background: #333; border: 1px solid #444; padding: 8px 10px; color: #fff; border-radius: 4px; font-size: 13px; box-sizing: border-box; width: 100%; }
-        input[type="range"] { padding: 0; background: transparent; border: none; cursor: pointer; }
+        input[type="range"] { padding: 0; background: transparent; border: none; cursor: pointer; height: 28px; -webkit-appearance: none; }
+        input[type="range"]::-webkit-slider-runnable-track { background: #444; height: 6px; border-radius: 3px; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; background: #00ffcc; height: 16px; width: 16px; border-radius: 50%; margin-top: -5px; cursor: pointer; }
         input[type="color"] { padding: 2px; height: 34px; cursor: pointer; }
         
-        /* Visual Palette Swatches Engine styling */
+        /* Visual Palette Swatches */
         .palette-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 5px; }
         .palette-swatch { border: 2px solid #444; border-radius: 6px; height: 44px; display: flex; flex-direction: column; overflow: hidden; cursor: pointer; transition: all 0.2s; position: relative; }
         .palette-swatch:hover { border-color: #fff; transform: scale(1.04); }
-        .palette-swatch.active { border-color: var(--accent); box-shadow: 0 0 8px rgba(212,175,55,0.4); }
+        .palette-swatch.active { border-color: #00ffcc; box-shadow: 0 0 8px rgba(0,255,204,0.4); }
         .swatch-color-bar { flex-grow: 1; display: flex; }
         .swatch-split { flex: 1; height: 100%; }
         .swatch-title { font-size: 8px; text-align: center; background: #222; padding: 2px 0; text-transform: uppercase; letter-spacing: 0.5px; color: #aaa; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         
         #search-results { background: #333; border: 1px solid #444; border-top: none; max-height: 140px; overflow-y: auto; display: none; position: absolute; width: calc(100% - 40px); z-index: 20; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
         .search-item { padding: 8px 10px; cursor: pointer; font-size: 12px; border-bottom: 1px solid #262626; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .search-item:hover { background: #444; color: var(--accent); }
+        .search-item:hover { background: #444; color: #00ffcc; }
         
         .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; }
         button { background: #3d3d3d; color: #fff; border: 1px solid #555; padding: 8px 12px; font-weight: bold; border-radius: 4px; cursor: pointer; font-size: 11px; text-transform: uppercase; }
-        button:hover { border-color: var(--accent); }
-        .btn-accent { background: var(--accent); color: #000; border: none; }
+        button:hover { border-color: #00ffcc; }
+        .btn-accent { background: #00ffcc; color: #000; border: none; }
         .btn-accent:hover { background: #ebd17a; }
         .btn-download { background: #27ae60; color: #fff; border: none; padding: 12px; width: 100%; font-size: 13px; margin-top: 5px; }
         
-        #legal-attribution { font-size: 10px; color: #555; text-align: center; margin-top: auto; padding-top: 15px; border-top: 1px dashed #333; line-height: 1.4; }
-        #legal-attribution a { color: #777; text-decoration: none; }
-
         @media (max-width: 768px) {
             body { flex-direction: column; overflow-y: auto !important; height: auto !important; }
             #sidebar { width: 100% !important; height: auto !important; order: 2; overflow-y: visible !important; padding: 15px; box-shadow: none; }
@@ -97,8 +96,7 @@
 
         <div class="settings-card">
             <h3>2. Designer Themes</h3>
-            <div class="palette-grid" id="palette-container-wrapper">
-                </div>
+            <div class="palette-grid" id="palette-container-wrapper"></div>
         </div>
 
         <div class="settings-card">
@@ -145,7 +143,7 @@
             <h3>4. Map Geometry Features</h3>
             <div class="input-group" style="margin-bottom: 12px; border-bottom: 1px dashed #3d3d3d; padding-bottom: 8px;">
                 <label>Main Highway Thickness</label>
-                <input type="range" id="width-highways" min="0.4" max="4.5" step="0.1" value="0.7" oninput="updateUI()">
+                <input type="range" id="width-highways" min="0.5" max="8.0" step="0.1" value="2.5" oninput="updateUI()">
             </div>
             <div class="toggle-row">
                 <label for="layer-highways">Render Primary Highways</label>
@@ -162,6 +160,14 @@
             <div class="toggle-row">
                 <label for="layer-water">Render Water Polygons</label>
                 <input type="checkbox" id="layer-water" style="width:auto;" checked onchange="toggleMapLayers()">
+            </div>
+            <div class="toggle-row">
+                <label for="layer-parks">Render Parks & Greenery</label>
+                <input type="checkbox" id="layer-parks" style="width:auto;" checked onchange="toggleMapLayers()">
+            </div>
+            <div class="toggle-row">
+                <label for="layer-trains">Render Transit / Train Tracks</label>
+                <input type="checkbox" id="layer-trains" style="width:auto;" checked onchange="toggleMapLayers()">
             </div>
             <div class="toggle-row">
                 <label for="layer-labels">Show Street/Place Labels</label>
@@ -186,35 +192,43 @@
             <div class="row">
                 <div class="input-group" style="flex:1;">
                     <label>Canvas Base</label>
-                    <input type="color" id="color-bg" value="#f3f1f7" oninput="updateUI()">
+                    <input type="color" id="color-bg" value="#08090f" oninput="updateUI()">
                 </div>
                 <div class="input-group" style="flex:1;">
                     <label>Highways</label>
-                    <input type="color" id="color-highways" value="#4a3b63" oninput="updateUI()">
+                    <input type="color" id="color-highways" value="#00ffcc" oninput="updateUI()">
                 </div>
                 <div class="input-group" style="flex:1;">
                     <label>Local Roads</label>
-                    <input type="color" id="color-roads" value="#8c829e" oninput="updateUI()">
+                    <input type="color" id="color-roads" value="#1a233a" oninput="updateUI()">
                 </div>
             </div>
             <div class="row" style="margin-top: 8px;">
                 <div class="input-group" style="flex:1;">
                     <label>Buildings</label>
-                    <input type="color" id="color-buildings" value="#b8afc8" oninput="updateUI()">
+                    <input type="color" id="color-buildings" value="#101524" oninput="updateUI()">
                 </div>
                 <div class="input-group" style="flex:1;">
                     <label>Waterways</label>
-                    <input type="color" id="color-water" value="#d2cbdc" oninput="updateUI()">
+                    <input type="color" id="color-water" value="#0d1b2a" oninput="updateUI()">
+                </div>
+                <div class="input-group" style="flex:1;">
+                    <label>Parks/Green</label>
+                    <input type="color" id="color-parks" value="#0a1a15" oninput="updateUI()">
                 </div>
             </div>
-            <div class="row" style="margin-top: 8px;" id="text-color-picker-row">
+            <div class="row" style="margin-top: 8px;">
+                <div class="input-group" style="flex:1;">
+                    <label>Train Lines</label>
+                    <input type="color" id="color-trains" value="#ff0055" oninput="updateUI()">
+                </div>
                 <div class="input-group" style="flex:1;">
                     <label>Heading Text</label>
-                    <input type="color" id="color-text-main" value="#36294d" oninput="updateUI()">
+                    <input type="color" id="color-text-main" value="#00ffcc" oninput="updateUI()">
                 </div>
                 <div class="input-group" style="flex:1;">
                     <label>Subtitle Text</label>
-                    <input type="color" id="color-text-sub" value="#6b617a" oninput="updateUI()">
+                    <input type="color" id="color-text-sub" value="#8fa0b2" oninput="updateUI()">
                 </div>
             </div>
         </div>
@@ -264,15 +278,14 @@
             preserveDrawingBuffer: true
         });
 
-        // Expanded Theme profiles matrix matching your designer criteria
         const themePresets = {
-            'gold-dark': { title: 'Gold', bg: '#000000', highway: '#d4af37', roads: '#b0912d', buildings: '#423712', water: '#1a170b', textMain: '#d4af37', textSub: '#888888' },
-            'minimal-gray': { title: 'Charcoal', bg: '#ffffff', highway: '#222222', roads: '#777777', buildings: '#e0e0e0', water: '#f0f0f0', textMain: '#111111', textSub: '#555555' },
-            'lavender-light': { title: 'Lavender', bg: '#f3f1f7', highway: '#4a3b63', roads: '#8c829e', buildings: '#b8afc8', water: '#d2cbdc', textMain: '#36294d', textSub: '#6b617a' },
-            'cyber-neon': { title: 'Neon', bg: '#08090f', highway: '#00ffcc', roads: '#1a233a', buildings: '#101524', water: '#0d1b2a', textMain: '#00ffcc', textSub: '#8fa0b2' },
-            'mid-century-navy': { title: 'Navy', bg: '#162b3d', highway: '#fca34d', roads: '#3a5f7d', buildings: '#223f5a', water: '#1d486c', textMain: '#fdf2a7', textSub: '#a5c4d4' },
-            'emerald-forest': { title: 'Emerald', bg: '#0b1d12', highway: '#c3a35a', roads: '#1b3b22', buildings: '#122918', water: '#08160e', textMain: '#ebd59b', textSub: '#709377' },
-            'warm-terracotta': { title: 'Clay', bg: '#f4ebe1', highway: '#b85032', roads: '#d99b77', buildings: '#ebd0be', water: '#e0c3b1', textMain: '#612312', textSub: '#9c6f59' }
+            'gold-dark': { title: 'Gold', bg: '#000000', highway: '#d4af37', roads: '#b0912d', buildings: '#423712', water: '#1a170b', parks: '#141a0f', trains: '#7a6221', textMain: '#d4af37', textSub: '#888888' },
+            'minimal-gray': { title: 'Charcoal', bg: '#ffffff', highway: '#222222', roads: '#777777', buildings: '#e0e0e0', water: '#f0f0f0', parks: '#ebf2ea', trains: '#bcbcbc', textMain: '#111111', textSub: '#555555' },
+            'lavender-light': { title: 'Lavender', bg: '#f3f1f7', highway: '#4a3b63', roads: '#8c829e', buildings: '#b8afc8', water: '#d2cbdc', parks: '#e6f0fa', trains: '#a399b3', textMain: '#36294d', textSub: '#6b617a' },
+            'cyber-neon': { title: 'Neon', bg: '#08090f', highway: '#00ffcc', roads: '#1a233a', buildings: '#101524', water: '#0d1b2a', parks: '#0a1a15', trains: '#ff0055', textMain: '#00ffcc', textSub: '#8fa0b2' },
+            'mid-century-navy': { title: 'Navy', bg: '#162b3d', highway: '#fca34d', roads: '#3a5f7d', buildings: '#223f5a', water: '#1d486c', parks: '#1f3a3a', trains: '#8da9c4', textMain: '#fdf2a7', textSub: '#a5c4d4' },
+            'emerald-forest': { title: 'Emerald', bg: '#0b1d12', highway: '#c3a35a', roads: '#1b3b22', buildings: '#122918', water: '#08160e', parks: '#1c4228', trains: '#947a43', textMain: '#ebd59b', textSub: '#709377' },
+            'warm-terracotta': { title: 'Clay', bg: '#f4ebe1', highway: '#b85032', roads: '#d99b77', buildings: '#ebd0be', water: '#e0c3b1', parks: '#e3dfd5', trains: '#823720', textMain: '#612312', textSub: '#9c6f59' }
         };
 
         map.on('styledata', () => {
@@ -282,38 +295,54 @@
         function adjustDetailRetentionParameters() {
             if (!map.isStyleLoaded()) return;
             const layers = map.getStyle().layers;
-            const highwaySliderWidth = parseFloat(document.getElementById('width-highways').value);
             
+            // FIXED: Regex strings matching all naming combinations for expressways, primary links, and connectors
+            const isHighwayRegex = /(motorway|trunk|primary|major|expressway|highway)/i;
+            const isMinorRoadRegex = /(minor|residential|service|secondary|tertiary|street|road)/i;
+            const isBuildingRegex = /(building|3d|structure|extrusion)/i;
+            const isWaterRegex = /(water|stream|river|lake|ocean|sea)/i;
+            const isParkRegex = /(park|leisure|forest|green|nature|landcover|cemetery)/i;
+            const isTrainRegex = /(rail|train|transit|railway|subway)/i;
+
+            const highwaySliderWidth = parseFloat(document.getElementById('width-highways').value);
+
             layers.forEach(layer => {
-                // Configures separate hierarchies for local roads vs user controlled highway thicknesses
-                if (layer.type === 'line' && (layer.id.includes('road') || layer.id.includes('transportation') || layer.id.includes('highway') || layer.id.includes('link'))) {
-                    if (layer.id.includes('major') || layer.id.includes('highway') || layer.id.includes('primary') || layer.id.includes('motorway')) {
-                        map.setPaintProperty(layer.id, 'line-width', highwaySliderWidth);
-                    } else {
-                        map.setPaintProperty(layer.id, 'line-width', [
-                            'interpolate', ['linear'], ['zoom'],
-                            1, 0.1,   
-                            10, 0.25,  
-                            14, 0.45
-                        ]);
-                    }
-                    map.setPaintProperty(layer.id, 'line-opacity', 0.85);
+                // FIXED: Multi-layered pattern search safely colors and overrides thicknesses
+                if (layer.type === 'line' && isHighwayRegex.test(layer.id)) {
+                    map.setPaintProperty(layer.id, 'line-width', highwaySliderWidth);
+                    map.setPaintProperty(layer.id, 'line-opacity', 0.95);
+                } 
+                else if (layer.type === 'line' && isMinorRoadRegex.test(layer.id)) {
+                    map.setPaintProperty(layer.id, 'line-width', [
+                        'interpolate', ['linear'], ['zoom'],
+                        1, 0.1,   
+                        10, 0.25,  
+                        14, 0.45
+                    ]);
+                    map.setPaintProperty(layer.id, 'line-opacity', 0.80);
                 }
                 
                 if (layer.type === 'symbol') {
-                    map.setLayoutProperty(layer.id, 'visibility', 'none');
+                    // Handled inside master visibility layer loop toggles
                 }
                 
-                if (layer.id.includes('building') || layer.source-layer === 'building' || layer.id.includes('3d') || layer.source-layer === '3d_buildings' || layer.id.includes('structure')) {
+                // FORCE Layer settings for Buildings
+                if (isBuildingRegex.test(layer.id) || (layer.source-layer && isBuildingRegex.test(layer.source-layer))) {
                     if (layer.type === 'fill' || layer.type === 'fill-extrusion') {
-                        map.setLayoutProperty(layer.id, 'visibility', 'visible');
                         map.setPaintProperty(layer.id, 'fill-opacity', 0.90); 
+                    }
+                }
+
+                // FORCE Layer settings for Transit Tracks
+                if (isTrainRegex.test(layer.id)) {
+                    if (layer.type === 'line') {
+                        map.setPaintProperty(layer.id, 'line-width', 0.8);
+                        map.setPaintProperty(layer.id, 'line-opacity', 0.75);
                     }
                 }
             });
         }
 
-        // Initialize Swatches Grid
         function generateVisualSwatches() {
             const grid = document.getElementById('palette-container-wrapper');
             grid.innerHTML = '';
@@ -321,7 +350,7 @@
             Object.keys(themePresets).forEach(key => {
                 const p = themePresets[key];
                 const div = document.createElement('div');
-                div.className = `palette-swatch ${key === 'lavender-light' ? 'active' : ''}`;
+                div.className = `palette-swatch ${key === 'cyber-neon' ? 'active' : ''}`;
                 div.id = `swatch-${key}`;
                 div.onclick = () => selectSwatchTheme(key);
 
@@ -347,6 +376,8 @@
             document.getElementById('color-roads').value = preset.roads;
             document.getElementById('color-buildings').value = preset.buildings;
             document.getElementById('color-water').value = preset.water;
+            document.getElementById('color-parks').value = preset.parks;
+            document.getElementById('color-trains').value = preset.trains;
             document.getElementById('color-text-main').value = preset.textMain;
             document.getElementById('color-text-sub').value = preset.textSub;
 
@@ -359,6 +390,8 @@
             const roadColorVal = document.getElementById('color-roads').value;
             const buildingColorVal = document.getElementById('color-buildings').value;
             const waterColorVal = document.getElementById('color-water').value;
+            const parkColorVal = document.getElementById('color-parks').value;
+            const trainColorVal = document.getElementById('color-trains').value;
             const mainTextVal = document.getElementById('color-text-main').value;
             const subTextVal = document.getElementById('color-text-sub').value;
             const fontVal = document.getElementById('font-select').value;
@@ -410,39 +443,55 @@
             const vignetteToggle = document.getElementById('style-soft-edges').checked;
             const vignetteMask = document.getElementById('map-vignette');
             const vignetteIntensity = document.getElementById('vignette-intensity').value;
-            const vignetteIntensityGroup = document.getElementById('vignette-intensity-group');
             
             if (vignetteToggle) {
-                vignetteIntensityGroup.style.display = "flex";
                 vignetteMask.style.display = "block";
                 vignetteMask.style.boxShadow = `inset 0 0 ${vignetteIntensity}px ${Math.floor(vignetteIntensity/2.5)}px ${bgVal}`;
             } else {
-                vignetteIntensityGroup.style.display = "none";
                 vignetteMask.style.display = "none";
             }
 
+            // FIXED MASTER VECTOR SWEEP: Forces execution path updates across all dynamic inputs safely
             if (map.isStyleLoaded()) {
                 const layers = map.getStyle().layers;
+                
+                const isHighwayRegex = /(motorway|trunk|primary|major|expressway|highway)/i;
+                const isMinorRoadRegex = /(minor|residential|service|secondary|tertiary|street|road)/i;
+                const isBuildingRegex = /(building|3d|structure|extrusion)/i;
+                const isWaterRegex = /(water|stream|river|lake|ocean|sea)/i;
+                const isParkRegex = /(park|leisure|forest|green|nature|landcover|cemetery)/i;
+                const isTrainRegex = /(rail|train|transit|railway|subway)/i;
+
+                const highwaySliderWidth = parseFloat(document.getElementById('width-highways').value);
+
                 layers.forEach(layer => {
                     if (layer.type === 'background') {
                         map.setPaintProperty(layer.id, 'background-color', bgVal);
                     }
-                    if (layer.type === 'fill' && (layer.id.includes('land') || layer.id.includes('area') || layer.id.includes('background') || layer.id.includes('park') || layer.id.includes('leisure'))) {
-                        map.setPaintProperty(layer.id, 'fill-color', bgVal);
+                    if (layer.type === 'fill' && (layer.id.includes('land') || layer.id.includes('area') || layer.id.includes('background'))) {
+                        if (!isParkRegex.test(layer.id)) {
+                            map.setPaintProperty(layer.id, 'fill-color', bgVal);
+                        }
                     }
-                    if (layer.id.includes('building') || layer.source-layer === 'building' || layer.id.includes('3d') || layer.source-layer === '3d_buildings' || layer.id.includes('structure')) {
+                    if (isBuildingRegex.test(layer.id) || (layer.source-layer && isBuildingRegex.test(layer.source-layer))) {
                         map.setPaintProperty(layer.id, 'fill-color', buildingColorVal);
                     }
-                    if (layer.id.includes('water') || layer.source-layer === 'water') {
-                        map.setPaintProperty(layer.id, 'fill-color', waterColorVal);
+                    if (isWaterRegex.test(layer.id)) {
+                        if (layer.type === 'fill') map.setPaintProperty(layer.id, 'fill-color', waterColorVal);
+                        if (layer.type === 'line') map.setPaintProperty(layer.id, 'line-color', waterColorVal);
                     }
-                    if (layer.type === 'line' && (layer.id.includes('motorway') || layer.id.includes('secondary') || layer.id.includes('trunk') || layer.id.includes('primary') || layer.id.includes('major') || layer.id.includes('link'))) {
+                    if (isParkRegex.test(layer.id)) {
+                        if (layer.type === 'fill') map.setPaintProperty(layer.id, 'fill-color', parkColorVal);
+                    }
+                    if (isTrainRegex.test(layer.id)) {
+                        if (layer.type === 'line') map.setPaintProperty(layer.id, 'line-color', trainColorVal);
+                    }
+                    if (layer.type === 'line' && isHighwayRegex.test(layer.id)) {
                         map.setPaintProperty(layer.id, 'line-color', highwayColorVal);
+                        map.setPaintProperty(layer.id, 'line-width', highwaySliderWidth);
                     }
-                    if (layer.type === 'line' && (layer.id.includes('minor') || layer.id.includes('residential') || layer.id.includes('service') || layer.id.includes('tertiary') || layer.id.includes('street') || layer.id.includes('road'))) {
-                        if (!layer.id.includes('motorway') && !layer.id.includes('trunk') && !layer.id.includes('primary')) {
-                            map.setPaintProperty(layer.id, 'line-color', roadColorVal);
-                        }
+                    if (layer.type === 'line' && isMinorRoadRegex.test(layer.id) && !isHighwayRegex.test(layer.id)) {
+                        map.setPaintProperty(layer.id, 'line-color', roadColorVal);
                     }
                 });
             }
@@ -455,23 +504,39 @@
             const showRoads = document.getElementById('layer-roads').checked;
             const showBuildings = document.getElementById('layer-buildings').checked;
             const showWater = document.getElementById('layer-water').checked;
+            const showParks = document.getElementById('layer-parks').checked;
+            const showTrains = document.getElementById('layer-trains').checked;
             const showLabels = document.getElementById('layer-labels').checked;
 
-            const allLayers = map.getStyle().layers;
-            allLayers.forEach(layer => {
+            const layers = map.getStyle().layers;
+            
+            const isHighwayRegex = /(motorway|trunk|primary|major|expressway|highway)/i;
+            const isMinorRoadRegex = /(minor|residential|service|secondary|tertiary|street|road)/i;
+            const isBuildingRegex = /(building|3d|structure|extrusion)/i;
+            const isWaterRegex = /(water|stream|river|lake|ocean|sea)/i;
+            const isParkRegex = /(park|leisure|forest|green|nature|landcover|cemetery)/i;
+            const isTrainRegex = /(rail|train|transit|railway|subway)/i;
+
+            layers.forEach(layer => {
                 if (layer.type === 'symbol') {
                     map.setLayoutProperty(layer.id, 'visibility', showLabels ? 'visible' : 'none');
                 }
-                if (layer.id.includes('building') || layer.source-layer === 'building' || layer.id.includes('3d') || layer.source-layer === '3d_buildings' || layer.id.includes('structure')) {
+                if (isBuildingRegex.test(layer.id) || (layer.source-layer && isBuildingRegex.test(layer.source-layer))) {
                     map.setLayoutProperty(layer.id, 'visibility', showBuildings ? 'visible' : 'none');
                 }
-                if (layer.id.includes('water') || layer.source-layer === 'water') {
+                if (isWaterRegex.test(layer.id)) {
                     map.setLayoutProperty(layer.id, 'visibility', showWater ? 'visible' : 'none');
                 }
-                if (layer.id.includes('road') || layer.id.includes('transportation') || layer.id.includes('highway') || layer.id.includes('link')) {
-                    if (layer.id.includes('major') || layer.id.includes('highway') || layer.id.includes('primary') || layer.id.includes('motorway') || layer.id.includes('trunk')) {
+                if (isParkRegex.test(layer.id)) {
+                    map.setLayoutProperty(layer.id, 'visibility', showParks ? 'visible' : 'none');
+                }
+                if (isTrainRegex.test(layer.id)) {
+                    map.setLayoutProperty(layer.id, 'visibility', showTrains ? 'visible' : 'none');
+                }
+                if (layer.id.includes('road') || layer.id.includes('transportation') || layer.id.includes('link')) {
+                    if (isHighwayRegex.test(layer.id)) {
                         map.setLayoutProperty(layer.id, 'visibility', showHighways ? 'visible' : 'none');
-                    } else {
+                    } else if (isMinorRoadRegex.test(layer.id)) {
                         map.setLayoutProperty(layer.id, 'visibility', showRoads ? 'visible' : 'none');
                     }
                 }
@@ -520,7 +585,7 @@
                     resultsBox.appendChild(div);
                 });
             } catch (err) {
-                console.error("Geocoding service exception: ", err);
+                console.error("Geocoding trace failed: ", err);
             }
         }
 
@@ -534,7 +599,7 @@
             const exportResMode = document.getElementById('export-resolution').value;
             const exportBtn = document.getElementById('btn-export');
             
-            exportBtn.innerText = "Compiling Vector Engine...";
+            exportBtn.innerText = "Processing File...";
             exportBtn.disabled = true;
 
             const renderMultiplier = (exportResMode === 'print-high') ? 4 : 1.5;
@@ -640,9 +705,8 @@
             }, 150);
         }
         
-        // Runtime execution initialization triggers
         generateVisualSwatches();
-        setTimeout(() => { selectSwatchTheme('lavender-light'); }, 400);
+        setTimeout(() => { selectSwatchTheme('cyber-neon'); }, 400);
     </script>
 </body>
 </html>
