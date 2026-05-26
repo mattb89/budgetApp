@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CityMapper Studio Pro v11.0</title>
+    <title>CityMapper Studio Elite v11.1</title>
     <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
     <style>
@@ -18,7 +18,7 @@
         #poster-wrapper { position: relative; box-shadow: 0 15px 40px rgba(0,0,0,0.7); width: 420px; height: 560px; display: flex; flex-shrink: 0; overflow: hidden; }
         #poster-frame { width: 100%; height: 100%; background: #000000; display: flex; flex-direction: column; position: relative; box-sizing: border-box; overflow: hidden; }
         
-        /* FIXED: Added a strict bounding layer box to stop mobile screen scaling bugs */
+        /* Strict bounding layer box to stop mobile screen scaling bugs */
         #map-bounding-box { position: absolute; top: 0; left: 0; width: 100%; height: calc(100% - 105px); overflow: hidden; z-index: 1; }
         #map-bounding-box.full-bleed { height: 100%; }
         
@@ -69,7 +69,7 @@
         #legal-attribution { font-size: 10px; color: #555; text-align: center; margin-top: auto; padding-top: 15px; border-top: 1px dashed #333; line-height: 1.4; }
         #legal-attribution a { color: #777; text-decoration: none; }
 
-        /* FIXED RESPONSIVE RULESET: Forces bottom sheet behavior on mobile devices */
+        /* Mobile Viewport Sizing */
         @media (max-width: 768px) {
             body { flex-direction: column; overflow-y: auto !important; height: auto !important; }
             #sidebar { width: 100% !important; height: auto !important; order: 2; overflow-y: visible !important; padding: 15px; box-shadow: none; }
@@ -259,6 +259,14 @@
             preserveDrawingBuffer: true
         });
 
+        const themePresets = {
+            'gold-dark': { bg: '#000000', highway: '#d4af37', roads: '#b0912d', textMain: '#d4af37', textSub: '#888888' },
+            'minimal-gray': { bg: '#ffffff', highway: '#222222', roads: '#777777', textMain: '#111111', textSub: '#555555' },
+            'lavender-light': { bg: '#f3f1f7', highway: '#4a3b63', roads: '#8c829e', textMain: '#36294d', textSub: '#6b617a' },
+            'cyber-neon': { bg: '#08090f', highway: '#00ffcc', roads: '#1a233a', textMain: '#00ffcc', textSub: '#8fa0b2' },
+            'mid-century-navy': { bg: '#162b3d', highway: '#fca34d', roads: '#3a5f7d', textMain: '#fdf2a7', textSub: '#a5c4d4' }
+        };
+
         map.on('styledata', () => {
             adjustDetailRetentionParameters();
         });
@@ -292,6 +300,7 @@
             });
         }
 
+        // FIXED: Added an explicit micro-delay to allow the double-zoom layer state to mount before forcing color syncs
         function applyPresetTheme() {
             const selectedKey = document.getElementById('theme-select').value;
             const preset = themePresets[selectedKey];
@@ -302,7 +311,9 @@
             document.getElementById('color-text-main').value = preset.textMain;
             document.getElementById('color-text-sub').value = preset.textSub;
 
-            updateUI();
+            setTimeout(() => {
+                updateUI();
+            }, 50);
         }
 
         function updateUI() {
@@ -478,7 +489,6 @@
             }
         });
 
-        // FIXED EXPORT PIPELINE: Compiles the full 200% over-zoom scale canvas flawlessly with 0 alignment drift
         function processExportPipeline() {
             const exportResMode = document.getElementById('export-resolution').value;
             const exportBtn = document.getElementById('btn-export');
@@ -580,7 +590,7 @@
                     downloadLink.href = exportCanvas.toDataURL('image/png');
                     downloadLink.click();
                 } catch (error) {
-                    console.error("Export System Fail: ", error);
+                    console.error("Export System Error: ", error);
                     alert("Export Engine failure.");
                 } finally {
                     exportBtn.innerText = "Generate Art File";
@@ -589,7 +599,7 @@
             }, 150);
         }
         
-        // Boot up initialization configurations map layouts
+        // Initial setup timeout to trigger initial theme layout seamlessly
         setTimeout(() => { applyPresetTheme(); }, 300);
     </script>
 </body>
