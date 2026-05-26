@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CityMapper Studio Pro v4.5</title>
+    <title>CityMapper Studio Pro v5.0</title>
     <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
     <style>
@@ -31,7 +31,7 @@
         #label-main { font-size: 24px; font-weight: bold; letter-spacing: 5px; text-transform: uppercase; margin: 0; color: var(--accent); line-height: 1.2; }
         #label-sub { font-size: 10px; letter-spacing: 2px; margin: 6px 0 0 0; color: #888; line-height: 1.2; }
         
-        /* Collapsible Settings Cards */
+        /* Layout Blocks configuration card styles */
         .settings-card { background: #262626; border-radius: 6px; padding: 12px; border: 1px solid #333; }
         .settings-card h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 10px 0; color: #bbb; border-bottom: 1px solid #3d3d3d; padding-bottom: 4px; }
         .input-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
@@ -43,12 +43,10 @@
         input[type="range"] { padding: 0; background: transparent; border: none; cursor: pointer; }
         input[type="color"] { padding: 2px; height: 34px; cursor: pointer; }
         
-        /* Auto-complete Box */
         #search-results { background: #333; border: 1px solid #444; border-top: none; max-height: 140px; overflow-y: auto; display: none; position: absolute; width: calc(100% - 40px); z-index: 20; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
         .search-item { padding: 8px 10px; cursor: pointer; font-size: 12px; border-bottom: 1px solid #262626; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .search-item:hover { background: #444; color: var(--accent); }
         
-        /* Toggles and Buttons */
         .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; }
         .toggle-row label { cursor: pointer; }
         button { background: #3d3d3d; color: #fff; border: 1px solid #555; padding: 8px 12px; font-weight: bold; border-radius: 4px; cursor: pointer; font-size: 11px; text-transform: uppercase; }
@@ -231,7 +229,6 @@
     </div>
 
     <script>
-        // Start map engine cleanly
         const map = new maplibregl.Map({
             container: 'map',
             style: 'https://tiles.openfreemap.org/styles/dark', 
@@ -241,7 +238,6 @@
             preserveDrawingBuffer: true
         });
 
-        // Exact match profiles for style properties
         const themePresets = {
             'gold-dark': { bg: '#000000', highway: '#d4af37', roads: '#b0912d', textMain: '#d4af37', textSub: '#888888' },
             'minimal-gray': { bg: '#ffffff', highway: '#222222', roads: '#777777', textMain: '#111111', textSub: '#555555' },
@@ -255,21 +251,30 @@
             toggleMapLayers();
         });
 
-        // Retains fine road networks and layout widths tightly when zooming out
         function adjustDetailRetentionParameters() {
             if (!map.isStyleLoaded()) return;
-            const style = map.getStyle();
+            const layers = map.getStyle().layers;
             
-            style.layers.forEach(layer => {
+            layers.forEach(layer => {
+                // FIXED: Force high density lines across low-zoom scales explicitly
                 if (layer.type === 'line' && (layer.id.includes('road') || layer.id.includes('transportation') || layer.id.includes('highway') || layer.id.includes('link'))) {
-                    // Force minimum widths mathematically to maintain dense grid styles when zooming far out
                     map.setPaintProperty(layer.id, 'line-width', [
                         'interpolate', ['linear'], ['zoom'],
-                        8, 1.0,
-                        11, 1.6,
-                        14, 2.8
+                        1, 1.5,
+                        10, 2.2,
+                        14, 3.5
                     ]);
                     map.setPaintProperty(layer.id, 'line-opacity', 0.95);
+                }
+                
+                // FIXED: Override server-side structural occlusion settings for building footprint geometry arrays
+                if (layer.id.includes('building') || layer.source-layer === 'building') {
+                    map.setPaintProperty(layer.id, 'fill-opacity', [
+                        'interpolate', ['linear'], ['zoom'],
+                        8, 0.6,
+                        12, 0.75,
+                        14, 0.85
+                    ]);
                 }
             });
         }
@@ -287,7 +292,6 @@
             updateUI();
         }
 
-        // Master UI Styling Updates Function with robust wildcard layer targeting overrides
         function updateUI() {
             const bgVal = document.getElementById('color-bg').value;
             const highwayColorVal = document.getElementById('color-highways').value;
@@ -350,23 +354,25 @@
                 vignetteMask.style.display = "none";
             }
 
-            // ROBUST OVERRIDES: Explicitly scan and dye ALL OpenFreeMap theme layers safely
             if (map.isStyleLoaded()) {
                 const layers = map.getStyle().layers;
                 layers.forEach(layer => {
-                    // Dye background layers
                     if (layer.type === 'background') {
                         map.setPaintProperty(layer.id, 'background-color', bgVal);
                     }
-                    // Dye structural land/area polygons
-                    if (layer.type === 'fill' && (layer.id.includes('land') || layer.id.includes('area') || layer.id.includes('background'))) {
+                    if (layer.type === 'fill' && (layer.id.includes('land') || layer.id.includes('area') || layer.id.includes('background') || layer.id.includes('park') || layer.id.includes('leisure'))) {
                         map.setPaintProperty(layer.id, 'fill-color', bgVal);
                     }
-                    // Dye primary road networks
-                    if (layer.type === 'line' && (layer.id.includes('motorway') || layer.id.includes('trunk') || layer.id.includes('primary') || layer.id.includes('major'))) {
+                    
+                    // FIXED: Color targets building footprints layers to prevent them blending invisible into the canvas base color
+                    if (layer.id.includes('building') || layer.source-layer === 'building') {
+                        // Creates a complementary tinted shade based on the background brightness profile
+                        map.setPaintProperty(layer.id, 'fill-color', roadColorVal);
+                    }
+                    
+                    if (layer.type === 'line' && (layer.id.includes('motorway') || layer.id.includes('trunk') || layer.id.includes('primary') || layer.id.includes('major') || layer.id.includes('link'))) {
                         map.setPaintProperty(layer.id, 'line-color', highwayColorVal);
                     }
-                    // Dye secondary local grids
                     if (layer.type === 'line' && (layer.id.includes('minor') || layer.id.includes('residential') || layer.id.includes('service') || layer.id.includes('secondary') || layer.id.includes('tertiary') || layer.id.includes('street') || layer.id.includes('road'))) {
                         if (!layer.id.includes('motorway') && !layer.id.includes('trunk') && !layer.id.includes('primary')) {
                             map.setPaintProperty(layer.id, 'line-color', roadColorVal);
@@ -376,7 +382,6 @@
             }
         }
 
-        // Vector Feature Layer Filters
         function toggleMapLayers() {
             if (!map.isStyleLoaded()) return;
 
@@ -449,7 +454,7 @@
                     resultsBox.appendChild(div);
                 });
             } catch (err) {
-                console.error("Geocoding fetch exception: ", err);
+                console.error("Geocoding trace down failed: ", err);
             }
         }
 
@@ -459,11 +464,12 @@
             }
         });
 
+        // FIXED: The Layout Aspect Ratio Syncing Pipeline
         function processExportPipeline() {
             const exportResMode = document.getElementById('export-resolution').value;
             const exportBtn = document.getElementById('btn-export');
             
-            exportBtn.innerText = "Processing File...";
+            exportBtn.innerText = "Processing...";
             exportBtn.disabled = true;
 
             const renderMultiplier = (exportResMode === 'print-high') ? 4 : 1.5;
@@ -479,11 +485,12 @@
                     const softEdgeToggle = document.getElementById('style-soft-edges').checked;
                     const vignetteIntensity = parseInt(document.getElementById('vignette-intensity').value);
 
+                    // FIXED: Dynamic label block rendering offset calculations based on active screens parameters
                     const labelBlockHeightSrc = textVisible ? 105 : 0;
                     
                     const exportCanvas = document.createElement('canvas');
                     exportCanvas.width = baseWidth * renderMultiplier;
-                    exportCanvas.height = (baseHeight + (textFloatToggle ? 0 : labelBlockHeightSrc)) * renderMultiplier; 
+                    exportCanvas.height = (baseHeight + (textFloatToggle ? 0 : (labelBlockHeightSrc * (baseHeight / 455)))) * renderMultiplier; 
                     const ctx = exportCanvas.getContext('2d');
 
                     const bgStyle = document.getElementById('color-bg').value;
@@ -508,10 +515,10 @@
 
                     if (softEdgeToggle) {
                         ctx.globalCompositeOperation = "source-over";
-                        const shadowBorder = (vignetteIntensity / 1.2) * renderMultiplier;
+                        const shadowBorder = (vignetteIntensity / 1.2) * renderMultiplier * (baseHeight / 455);
                         ctx.strokeStyle = bgStyle;
                         ctx.lineWidth = shadowBorder;
-                        ctx.shadowBlur = vignetteIntensity * renderMultiplier;
+                        ctx.shadowBlur = vignetteIntensity * renderMultiplier * (baseHeight / 455);
                         ctx.shadowColor = bgStyle;
                         ctx.strokeRect(shadowBorder/2, shadowBorder/2, exportCanvas.width - shadowBorder, mapDestHeight - shadowBorder);
                         ctx.shadowBlur = 0; 
@@ -522,32 +529,32 @@
                         ctx.textBaseline = 'middle';
 
                         if (textFloatToggle) {
-                            const overlayCenterY = exportCanvas.height - (75 * renderMultiplier);
+                            const overlayCenterY = exportCanvas.height - (75 * renderMultiplier * (baseHeight / 455));
                             
                             ctx.fillStyle = "rgba(0,0,0,0.75)";
-                            ctx.fillRect(exportCanvas.width * 0.12, overlayCenterY - (40 * renderMultiplier), exportCanvas.width * 0.76, 85 * renderMultiplier);
+                            ctx.fillRect(exportCanvas.width * 0.12, overlayCenterY - (40 * renderMultiplier * (baseHeight / 455)), exportCanvas.width * 0.76, 85 * renderMultiplier * (baseHeight / 455));
                             
                             ctx.fillStyle = mainTextClass;
-                            ctx.font = `bold ${Math.floor(fontSizeMainSrc * renderMultiplier)}px ${fontSelected}`;
+                            ctx.font = `bold ${Math.floor(fontSizeMainSrc * renderMultiplier * (baseHeight / 455))}px ${fontSelected}`;
                             ctx.letterSpacing = `${letterSpacingSrc * renderMultiplier}px`;
-                            ctx.fillText(titleValue, exportCanvas.width / 2, overlayCenterY - (8 * renderMultiplier));
+                            ctx.fillText(titleValue, exportCanvas.width / 2, overlayCenterY - (8 * renderMultiplier * (baseHeight / 455)));
                             
                             ctx.fillStyle = subTextClass;
-                            ctx.font = `${Math.floor(10 * renderMultiplier)}px ${fontSelected}`;
+                            ctx.font = `${Math.floor(10 * renderMultiplier * (baseHeight / 455))}px ${fontSelected}`;
                             ctx.letterSpacing = "2px";
-                            ctx.fillText(subtitleValue, exportCanvas.width / 2, overlayCenterY + (18 * renderMultiplier));
+                            ctx.fillText(subtitleValue, exportCanvas.width / 2, overlayCenterY + (18 * renderMultiplier * (baseHeight / 455)));
                         } else {
                             const bannerCenterY = mapDestHeight + ((exportCanvas.height - mapDestHeight) / 2);
                             
                             ctx.fillStyle = mainTextClass;
-                            ctx.font = `bold ${Math.floor(fontSizeMainSrc * renderMultiplier)}px ${fontSelected}`;
+                            ctx.font = `bold ${Math.floor(fontSizeMainSrc * renderMultiplier * (baseHeight / 455))}px ${fontSelected}`;
                             ctx.letterSpacing = `${letterSpacingSrc * renderMultiplier}px`;
-                            ctx.fillText(titleValue, exportCanvas.width / 2, bannerCenterY - (12 * renderMultiplier));
+                            ctx.fillText(titleValue, exportCanvas.width / 2, bannerCenterY - (12 * renderMultiplier * (baseHeight / 455)));
                             
                             ctx.fillStyle = subTextClass;
-                            ctx.font = `${Math.floor(10 * renderMultiplier)}px ${fontSelected}`;
+                            ctx.font = `${Math.floor(10 * renderMultiplier * (baseHeight / 455))}px ${fontSelected}`;
                             ctx.letterSpacing = "2px";
-                            ctx.fillText(subtitleValue, exportCanvas.width / 2, bannerCenterY + (12 * renderMultiplier));
+                            ctx.fillText(subtitleValue, exportCanvas.width / 2, bannerCenterY + (12 * renderMultiplier * (baseHeight / 455)));
                         }
                     }
 
@@ -557,8 +564,8 @@
                     downloadLink.href = exportCanvas.toDataURL('image/png');
                     downloadLink.click();
                 } catch (error) {
-                    console.error("Export compiling engine failure: ", error);
-                    alert("Export Error. Processing standard web preview size instead.");
+                    console.error("Export failure: ", error);
+                    alert("Export Error encountered. Compiling standard preview configuration arrays targets.");
                 } finally {
                     exportBtn.innerText = "Generate Art File";
                     exportBtn.disabled = false;
