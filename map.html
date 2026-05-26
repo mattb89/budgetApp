@@ -3,119 +3,280 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CityMapper Studio</title>
+    <title>CityMapper Studio v2.0</title>
     <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
     <style>
-        body { margin: 0; padding: 0; font-family: 'Helvetica Neue', Arial, sans-serif; background: #111; color: #fff; display: flex; height: 100vh; overflow: hidden; }
-        #sidebar { width: 350px; background: #1a1a1a; padding: 20px; box-shadow: 2px 0 10px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 20px; z-index: 10; }
-        #map-container { flex-grow: 1; position: relative; display: flex; justify-content: center; align-items: center; background: #222; }
+        body { margin: 0; padding: 0; font-family: 'Helvetica Neue', Arial, sans-serif; background: #121212; color: #fff; display: flex; height: 100vh; overflow: hidden; }
+        #sidebar { width: 360px; background: #1c1c1c; padding: 20px; box-shadow: 4px 0 15px rgba(0,0,0,0.6); display: flex; flex-direction: column; gap: 20px; z-index: 10; overflow-y: auto; }
+        #map-container { flex-grow: 1; position: relative; display: flex; justify-content: center; align-items: center; background: #262626; padding: 20px; }
         
-        /* The Canvas Poster Frame Frame */
-        #poster-frame { width: 500px; height: 650px; background: #000000; box-shadow: 0 20px 50px rgba(0,0,0,0.8); border: 12px solid #000; display: flex; flex-direction: column; position: relative; }
+        /* The Canvas Poster Frame */
+        #poster-wrapper { position: relative; box-shadow: 0 25px 60px rgba(0,0,0,0.8); }
+        #poster-frame { width: 480px; height: 640px; background: #000000; display: flex; flex-direction: column; position: relative; box-sizing: border-box; }
         #map { flex-grow: 1; width: 100%; }
         
-        /* Poster Typography Label */
-        #poster-label { height: 100px; background: #000000; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: #d4af37; border-top: 2px solid #222; padding: 10px; }
-        #label-main { font-size: 24px; font-weight: bold; letter-spacing: 4px; text-transform: uppercase; margin: 0; }
-        #label-sub { font-size: 12px; letter-spacing: 2px; margin: 5px 0 0 0; color: #888; }
+        /* Poster Typography Label Layout */
+        #poster-label { height: 110px; background: #000000; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 10px 20px; box-sizing: border-box; transition: background 0.3s; }
+        #label-main { font-size: 24px; font-weight: bold; letter-spacing: 5px; text-transform: uppercase; margin: 0; color: #d4af37; transition: color 0.3s; font-family: 'Georgia', serif; }
+        #label-sub { font-size: 11px; letter-spacing: 2px; margin: 6px 0 0 0; color: #888888; transition: color 0.3s; }
         
-        /* UI Inputs */
-        h2 { font-size: 18px; letter-spacing: 1px; margin: 0 0 10px 0; color: #e5e5e5; border-bottom: 1px solid #333; padding-bottom: 5px; }
-        .input-group { display: flex; flex-direction: column; gap: 5px; }
-        label { font-size: 11px; text-transform: uppercase; color: #aaa; letter-spacing: 1px; }
-        input, select { background: #2b2b2b; border: 1px solid #444; padding: 10px; color: #fff; border-radius: 4px; font-size: 14px; }
-        input:focus { border-color: #d4af37; outline: none; }
-        button { background: #d4af37; color: #000; border: none; padding: 12px; font-weight: bold; border-radius: 4px; cursor: pointer; transition: background 0.2s; text-transform: uppercase; letter-spacing: 1px; }
-        button:hover { background: #f1c40f; }
+        /* UI Styling Components */
+        h2 { font-size: 14px; text-transform: uppercase; letter-spacing: 1.5px; margin: 0 0 12px 0; color: #e5e5e5; border-bottom: 1px solid #333; padding-bottom: 6px; }
+        .input-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+        .row { display: flex; gap: 8px; }
+        .row input { flex-grow: 1; }
+        label { font-size: 11px; text-transform: uppercase; color: #999; letter-spacing: 1px; }
+        input, select { background: #2a2a2a; border: 1px solid #444; padding: 10px; color: #fff; border-radius: 4px; font-size: 13px; box-sizing: border-box; }
+        input:focus, select:focus { border-color: #d4af37; outline: none; }
+        
+        /* Search Auto-complete Suggestions Box */
+        #search-results { background: #2a2a2a; border: 1px solid #444; border-top: none; max-height: 150px; overflow-y: auto; display: none; border-radius: 0 0 4px 4px; position: absolute; width: 320px; z-index: 15; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .search-item { padding: 8px 12px; cursor: pointer; font-size: 12px; border-bottom: 1px solid #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .search-item:hover { background: #3a3a3a; color: #d4af37; }
+        
+        /* Buttons */
+        button { background: #333; color: #fff; border: 1px solid #555; padding: 10px 14px; font-weight: bold; border-radius: 4px; cursor: pointer; transition: all 0.2s; text-transform: uppercase; letter-spacing: 1px; font-size: 11px; }
+        button:hover { background: #444; border-color: #d4af37; }
+        .btn-primary { background: #d4af37; color: #000; border: none; }
+        .btn-primary:hover { background: #e5c158; color: #000; }
+        .btn-success { background: #27ae60; color: #fff; border: none; font-size: 13px; padding: 14px; width: 100%; margin-top: 5px; }
+        .btn-success:hover { background: #2ecc71; }
     </style>
 </head>
 <body>
 
     <div id="sidebar">
         <div>
-            <h2>1. Location Lookups</h2>
-            <div class="input-group">
-                <label>Coordinates (Lng, Lat)</label>
-                <input type="text" id="coords-input" value="-98.4936, 29.4241">
-                <button onclick="updateLocation()">Jump to Location</button>
+            <h2>1. Location Search</h2>
+            <div class="input-group" style="position: relative;">
+                <label>Search City Name</label>
+                <div class="row">
+                    <input type="text" id="search-input" placeholder="e.g., Paris, Florence, Austin..." autocomplete="off">
+                    <button onclick="searchLocation()" class="btn-primary">Find</button>
+                </div>
+                <div id="search-results"></div>
             </div>
         </div>
 
         <div>
-            <h2>2. Custom Typography</h2>
-            <div class="input-group" style="margin-bottom: 10px;">
-                <label>Main Heading</label>
+            <h2>2. Custom Labels</h2>
+            <div class="input-group">
+                <label>Main Title</label>
                 <input type="text" id="text-main-input" value="San Antonio" oninput="updateText()">
             </div>
             <div class="input-group">
-                <label>Subtext / Coordinates</label>
+                <label>Subtitle / Coords</label>
                 <input type="text" id="text-sub-input" value="TEXAS | 29.4241° N, 98.4936° W" oninput="updateText()">
             </div>
         </div>
 
         <div>
-            <h2>3. Style Variant</h2>
+            <h2>3. Aesthetics & Theme</h2>
             <div class="input-group">
-                <label>Theme Preset</label>
+                <label>Map Theme Engine</label>
                 <select id="theme-select" onchange="changeTheme()">
                     <option value="https://tiles.openfreemap.org/styles/dark">High-Contrast Dark</option>
-                    <option value="https://tiles.openfreemap.org/styles/liberty">Classic Minimalist</option>
-                    <option value="https://tiles.openfreemap.org/styles/positron">Light Pastel</option>
+                    <option value="https://tiles.openfreemap.org/styles/liberty">Classic Minimalist Light</option>
+                    <option value="https://tiles.openfreemap.org/styles/positron">Pastel Light/Lavender</option>
                 </select>
+            </div>
+            <div class="input-group">
+                <label>Poster Background Color</label>
+                <input type="color" id="bg-color-picker" value="#000000" oninput="updateColors()">
+            </div>
+            <div class="input-group">
+                <label>Main Text Color</label>
+                <input type="color" id="text-color-picker" value="#d4af37" oninput="updateColors()">
+            </div>
+            <div class="input-group">
+                <label>Subtext Color</label>
+                <input type="color" id="subtext-color-picker" value="#888888" oninput="updateColors()">
             </div>
         </div>
 
-        <button style="margin-top: auto; background: #27ae60; color: white;" onclick="exportPoster()">Export High-Res Print</button>
+        <div>
+            <h2>4. Export File Configurations</h2>
+            <div class="input-group">
+                <label>Target Print Size</label>
+                <select id="export-size">
+                    <option value="preview">Quick Web Preview (Screen Res)</option>
+                    <option value="print-12x18">Standard Print: 12" x 18" (3600 x 5400 px)</option>
+                    <option value="print-24x36" selected>Full Resolution Print: 24" x 36" (7200 x 10800 px)</option>
+                </select>
+            </div>
+            <button class="btn-success" onclick="exportPoster()">Generate & Download</button>
+        </div>
     </div>
 
     <div id="map-container">
-        <div id="poster-frame">
-            <div id="map"></div>
-            <div id="poster-label">
-                <div id="label-main">San Antonio</div>
-                <div id="label-sub">TEXAS | 29.4241° N, 98.4936° W</div>
+        <div id="poster-wrapper">
+            <div id="poster-frame">
+                <div id="map"></div>
+                <div id="poster-label">
+                    <div id="label-main">San Antonio</div>
+                    <div id="label-sub">TEXAS | 29.4241° N, 98.4936° W</div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Initialize MapLibre Engine over OpenFreeMap Dark Matter Endpoint
+        // Initialize MapLibre Map with preserveDrawingBuffer enabled (Crucial for Canvas exports)
         const map = new maplibregl.Map({
             container: 'map',
             style: 'https://tiles.openfreemap.org/styles/dark', 
-            center: [-98.4936, 29.4241], // Default coordinates
-            zoom: 12,
-            attributionControl: false // Turning off default map overlay placements
+            center: [-98.4936, 29.4241], 
+            zoom: 12.5,
+            attributionControl: false,
+            preserveDrawingBuffer: true 
         });
 
-        // Dynamic Text Updates
+        // Live Text Content Syncing
         function updateText() {
             document.getElementById('label-main').innerText = document.getElementById('text-main-input').value;
             document.getElementById('label-sub').innerText = document.getElementById('text-sub-input').value;
         }
 
-        // Camera Positioning Function
-        function updateLocation() {
-            const coordString = document.getElementById('coords-input').value;
-            const [lng, lat] = coordString.split(',').map(num => parseFloat(num.trim()));
-            
-            if(!isNaN(lng) && !isNaN(lat)) {
-                map.flyTo({ center: [lng, lat], zoom: 12 });
-            } else {
-                alert("Please format coordinates cleanly as: Longitude, Latitude");
-            }
+        // Live Aesthetic Palette Controls
+        function updateColors() {
+            const bg = document.getElementById('bg-color-picker').value;
+            const text = document.getElementById('text-color-picker').value;
+            const subtext = document.getElementById('subtext-color-picker').value;
+
+            document.getElementById('poster-frame').style.backgroundColor = bg;
+            document.getElementById('poster-label').style.backgroundColor = bg;
+            document.getElementById('label-main').style.color = text;
+            document.getElementById('label-sub').style.color = subtext;
         }
 
-        // Map Theme Toggling
+        // Map Theme Swapper
         function changeTheme() {
             const selectedStyle = document.getElementById('theme-select').value;
             map.setStyle(selectedStyle);
         }
 
-        // Simple Snapshot Export (Simulating the High-Res Generation pipeline)
+        // Dynamic OpenStreetMap Geocoding Search Engine
+        async function searchLocation() {
+            const query = document.getElementById('search-input').value;
+            if (!query) return;
+
+            const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`;
+            const resultsBox = document.getElementById('search-results');
+            resultsBox.innerHTML = '';
+
+            try {
+                const response = await fetch(url, { headers: { 'User-Agent': 'CityMapperStore-StudioApp' } });
+                const data = await response.json();
+
+                if (data.length === 0) {
+                    resultsBox.innerHTML = '<div class="search-item">No locations found.</div>';
+                    resultsBox.style.display = 'block';
+                    return;
+                }
+
+                resultsBox.style.display = 'block';
+                data.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'search-item';
+                    div.innerText = item.display_name;
+                    div.onclick = () => {
+                        const lat = parseFloat(item.lat);
+                        const lon = parseFloat(item.lon);
+                        map.flyTo({ center: [lon, lat], zoom: 12.5 });
+                        
+                        // Parse name values cleanly for user convenience
+                        const nameArray = item.display_name.split(',');
+                        document.getElementById('text-main-input').value = nameArray[0].trim();
+                        
+                        const latDir = lat >= 0 ? 'N' : 'S';
+                        const lonDir = lon >= 0 ? 'E' : 'W';
+                        document.getElementById('text-sub-input').value = `${(nameArray[2] || nameArray[1] || '').trim().toUpperCase()} | ${Math.abs(lat).toFixed(4)}° ${latDir}, ${Math.abs(lon).toFixed(4)}° ${lonDir}`;
+                        
+                        updateText();
+                        resultsBox.style.display = 'none';
+                    };
+                    resultsBox.appendChild(div);
+                });
+            } catch (err) {
+                console.error("Geocoding fetch parsing error: ", err);
+            }
+        }
+
+        // Hide autocomplete search options when clicking outside the panel boundaries
+        document.addEventListener('click', (e) => {
+            if (e.target.id !== 'search-input') {
+                document.getElementById('search-results').style.display = 'none';
+            }
+        });
+
+        // High-Resolution Synchronized Map Image Rendering & Download Engine
         function exportPoster() {
-            alert("Application structure configured successfully. Hooking up production rendering vectors requires expanding canvas buffer targets.");
+            const sizeMode = document.getElementById('export-size').value;
+            
+            // Define targeted export dimensions based on selected target printing aspect ratios
+            let targetWidth = 480;
+            let targetHeight = 640;
+            
+            if (sizeMode === 'print-12x18') {
+                targetWidth = 3600;
+                targetHeight = 5400;
+            } else if (sizeMode === 'print-24x36') {
+                targetWidth = 7200;
+                targetHeight = 10800;
+            }
+
+            // Create off-screen rendering canvas buffer target
+            const exportCanvas = document.createElement('canvas');
+            exportCanvas.width = targetWidth;
+            exportCanvas.height = targetHeight;
+            const ctx = exportCanvas.getContext('2d');
+
+            // Gather structural styling parameters
+            const bgStyle = document.getElementById('bg-color-picker').value;
+            const mainTextClass = document.getElementById('text-color-picker').value;
+            const subTextClass = document.getElementById('subtext-color-picker').value;
+            const titleValue = document.getElementById('label-main').innerText;
+            const subtitleValue = document.getElementById('label-sub').innerText;
+
+            // Fill off-screen canvas base panel background bounds
+            ctx.fillStyle = bgStyle;
+            ctx.fillRect(0, 0, targetWidth, targetHeight);
+
+            // Fetch the primary active WebGL map viewport layer canvas stream 
+            const mapCanvas = map.getCanvas();
+            
+            // Calculate height splits to account for the typographic lower banner block
+            const labelBlockPercentage = 110 / 640; 
+            const mapRenderHeight = targetHeight * (1 - labelBlockPercentage);
+            const labelBlockHeight = targetHeight * labelBlockPercentage;
+
+            // Draw the map graphic canvas directly into upper section mapping window
+            ctx.drawImage(mapCanvas, 0, 0, targetWidth, mapRenderHeight);
+
+            // Draw Typographic Elements onto the output canvas layout structures
+            const labelCenterY = mapRenderHeight + (labelBlockHeight / 2);
+
+            // Main Header Element Configuration
+            const mainFontSize = Math.floor(targetHeight * (24 / 640));
+            ctx.fillStyle = mainTextClass;
+            ctx.font = `bold ${mainFontSize}px Georgia, serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(titleValue, targetWidth / 2, labelCenterY - (mainFontSize / 3));
+
+            // Subtitle Element Configuration
+            const subFontSize = Math.floor(targetHeight * (11 / 640));
+            ctx.fillStyle = subTextClass;
+            ctx.font = `${subFontSize}px Arial, sans-serif`;
+            ctx.fillText(subtitleValue, targetWidth / 2, labelCenterY + (mainFontSize * 0.75));
+
+            // Trigger safe automated download download parameters
+            const dataUrl = exportCanvas.toDataURL('image/png');
+            const downloadLink = document.createElement('a');
+            downloadLink.download = `${titleValue.replace(/\s+/g, '_')}_Custom_Map_${sizeMode}.png`;
+            downloadLink.href = dataUrl;
+            downloadLink.click();
         }
     </script>
 </body>
