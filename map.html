@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CityMapper Studio Elite v8.0</title>
+    <title>CityMapper Studio Elite v9.0</title>
     <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
     <style>
@@ -30,7 +30,6 @@
         #label-main { font-size: 24px; font-weight: bold; letter-spacing: 5px; text-transform: uppercase; margin: 0; color: var(--accent); line-height: 1.2; }
         #label-sub { font-size: 10px; letter-spacing: 2px; margin: 6px 0 0 0; color: #888; line-height: 1.2; }
         
-        /* UI Control Cards */
         .settings-card { background: #262626; border-radius: 6px; padding: 12px; border: 1px solid #333; }
         .settings-card h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 10px 0; color: #bbb; border-bottom: 1px solid #3d3d3d; padding-bottom: 4px; }
         .input-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
@@ -54,7 +53,6 @@
         .btn-accent:hover { background: #ebd17a; }
         .btn-download { background: #27ae60; color: #fff; border: none; padding: 12px; width: 100%; font-size: 13px; margin-top: 5px; }
         
-        /* Legal Credit Footer (Keeps application completely legitimate) */
         #legal-attribution { font-size: 10px; color: #555; text-align: center; margin-top: auto; padding-top: 15px; border-top: 1px dashed #333; line-height: 1.4; }
         #legal-attribution a { color: #777; text-decoration: none; }
         
@@ -236,13 +234,13 @@
     </div>
 
     <script>
-        // Start MapLibre context cleanly over OpenFreeMap server lines
+        // FIXED: Locked base initialization zoom directly to a crisp 14.2 to guarantee building data streaming from CDN
         const map = new maplibregl.Map({
             container: 'map',
             style: 'https://tiles.openfreemap.org/styles/dark', 
             center: [9.0908, 48.7297], 
-            zoom: 12.2,
-            attributionControl: false, // Prevents generic interactive overlay blocks from blending onto canvas
+            zoom: 14.2, 
+            attributionControl: false, 
             preserveDrawingBuffer: true
         });
 
@@ -254,7 +252,6 @@
             'mid-century-navy': { bg: '#162b3d', highway: '#fca34d', roads: '#3a5f7d', textMain: '#fdf2a7', textSub: '#a5c4d4' }
         };
 
-        // THE MISSING LINK: Forces data layers to instantly override CDN server compression limits
         map.on('styledata', () => {
             adjustDetailRetentionParameters();
         });
@@ -264,22 +261,26 @@
             const layers = map.getStyle().layers;
             
             layers.forEach(layer => {
-                // DATA OVER-ZOOM SLICING: Force high-density thread lines to stay locked even when zoomed far out
+                // FIXED: Thinned down road street weights explicitly to leave wide, breathing corridors for buildings
                 if (layer.type === 'line' && (layer.id.includes('road') || layer.id.includes('transportation') || layer.id.includes('highway') || layer.id.includes('link'))) {
                     map.setPaintProperty(layer.id, 'line-width', [
                         'interpolate', ['linear'], ['zoom'],
-                        1, 0.4,   // Razor-thin intricate threads at distance (matches your goal print)
-                        10, 0.9,  // Muted background line weights
-                        14, 2.5   // Standard close configurations
+                        1, 0.2,   
+                        10, 0.5,  // Thread weights at mid distances
+                        14, 1.2   // Keeps major avenues thin and elegant
                     ]);
-                    map.setPaintProperty(layer.id, 'line-opacity', 0.85);
+                    map.setPaintProperty(layer.id, 'line-opacity', 0.80);
                 }
                 
-                // MULTI-WILDCARD OVERRIDES: Unlocks building footprints on light, dark, and open styles automatically
+                // FIXED: Strip native map font layers completely so city/highway shields don't bleed onto design grids
+                if (layer.type === 'symbol') {
+                    map.setLayoutProperty(layer.id, 'visibility', 'none');
+                }
+                
                 if (layer.id.includes('building') || layer.source-layer === 'building' || layer.id.includes('3d') || layer.source-layer === '3d_buildings' || layer.id.includes('structure')) {
                     if (layer.type === 'fill' || layer.type === 'fill-extrusion') {
                         map.setLayoutProperty(layer.id, 'visibility', 'visible');
-                        map.setPaintProperty(layer.id, 'fill-opacity', 0.70); // Keeps them delicate, not chunky
+                        map.setPaintProperty(layer.id, 'fill-opacity', 0.85); 
                     }
                 }
             });
@@ -441,7 +442,7 @@
                     div.onclick = () => {
                         const lat = parseFloat(item.lat);
                         const lon = parseFloat(item.lon);
-                        map.flyTo({ center: [lon, lat], zoom: 12.2 });
+                        map.flyTo({ center: [lon, lat], zoom: 14.2 }); // Lock search jumps directly into high detail thresholds
                         
                         const nameArray = item.display_name.split(',');
                         document.getElementById('text-main-input').value = nameArray[0].trim();
@@ -466,7 +467,6 @@
             }
         });
 
-        // PRISTINE EXPORT COMPILER: Strips interface shadows/rounded wrappers completely for standard printing
         function processExportPipeline() {
             const exportResMode = document.getElementById('export-resolution').value;
             const exportBtn = document.getElementById('btn-export');
@@ -504,7 +504,6 @@
                     const fontSizeMainSrc = parseInt(document.getElementById('size-font-main').value);
                     const letterSpacingSrc = parseInt(document.getElementById('letter-spacing-main').value);
 
-                    // Force flat rectangular canvas fill commands (Zero rounded corners)
                     ctx.fillStyle = bgStyle;
                     ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
 
@@ -567,7 +566,7 @@
                     downloadLink.href = exportCanvas.toDataURL('image/png');
                     downloadLink.click();
                 } catch (error) {
-                    console.error("Export failure trace log: ", error);
+                    console.error("Export failure log: ", error);
                     alert("Export Engine error encountered.");
                 } finally {
                     exportBtn.innerText = "Generate Art File";
