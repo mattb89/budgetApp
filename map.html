@@ -3,36 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CityMapper Studio Masterpiece v13.0</title>
+    <title>CityMapper Studio Masterpiece v14.0</title>
     <link href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css" rel="stylesheet" />
     <script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
     <style>
         :root { --accent: #00ffcc; --bg-dark: #121212; --panel-bg: #1c1c1c; }
         body { margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg-dark); color: #fff; display: flex; flex-direction: row; height: 100vh; overflow: hidden; }
         
-        /* Layout Structure */
+        /* Layout Framework */
         #sidebar { width: 380px; background: var(--panel-bg); padding: 20px; box-shadow: 4px 0 15px rgba(0,0,0,0.5); display: flex; flex-direction: column; gap: 14px; z-index: 10; overflow-y: auto; box-sizing: border-box; flex-shrink: 0; }
         #map-container { flex-grow: 1; position: relative; display: flex; justify-content: center; align-items: center; background: #222; padding: 15px; box-sizing: border-box; overflow: hidden; }
         
-        /* Locked Poster Viewport Box */
+        /* POSTER FRAME SETTINGS: Fixed presentation dimensions */
         #poster-wrapper { position: relative; box-shadow: 0 15px 40px rgba(0,0,0,0.7); width: 420px; height: 560px; display: flex; flex-shrink: 0; overflow: hidden; }
         #poster-frame { width: 100%; height: 100%; background: #000000; display: flex; flex-direction: column; position: relative; box-sizing: border-box; overflow: hidden; }
         
-        #map-bounding-box { position: absolute; top: 0; left: 0; width: 100%; height: calc(100% - 105px); overflow: hidden; z-index: 1; }
+        /* LOCKED HEIGHT PASSTHROUGH: Reclaims space from old 105px banner down to a tight 75px footprint */
+        #map-bounding-box { position: absolute; top: 0; left: 0; width: 100%; height: calc(100% - 75px); overflow: hidden; z-index: 1; }
         #map-bounding-box.full-bleed { height: 100%; }
         
-        /* Extended Field of View Scaling Engine */
+        /* EXTENDED FIELD OF VIEW SCALING ENGINE */
         #map-wrapper-inner { position: absolute; top: 0; left: 0; width: 200%; height: 200%; transform: scale(0.5); transform-origin: top left; overflow: hidden; }
         #map { width: 100%; height: 100%; }
         #map-vignette { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; box-shadow: inset 0 0 120px 40px #000000; z-index: 2; }
         
-        /* Typography Elements */
-        #poster-label { height: 105px; background: #000000; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 10px; box-sizing: border-box; z-index: 3; position: absolute; bottom: 0; left: 0; width: 100%; }
-        #poster-label.floating { bottom: 30px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(5px); height: auto; min-width: 70%; padding: 15px; }
+        /* Typography Elements: Optimized Spacing Height Box */
+        #poster-label { height: 75px; background: #000000; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 5px 10px; box-sizing: border-box; z-index: 3; position: absolute; bottom: 0; left: 0; width: 100%; }
+        #poster-label.floating { bottom: 25px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(5px); height: auto; min-width: 70%; padding: 12px; }
         #poster-label.hidden-element { display: none !important; }
         
-        #label-main { font-size: 24px; font-weight: bold; letter-spacing: 5px; text-transform: uppercase; margin: 0; color: var(--accent); line-height: 1.2; }
-        #label-sub { font-size: 10px; letter-spacing: 2px; margin: 6px 0 0 0; color: #888; line-height: 1.2; }
+        #label-main { font-size: 22px; font-weight: bold; letter-spacing: 5px; text-transform: uppercase; margin: 0; color: var(--accent); line-height: 1.1; }
+        #label-sub { font-size: 9px; letter-spacing: 2px; margin: 4px 0 0 0; color: #888; line-height: 1.1; }
         
         /* Custom UI Components */
         .settings-card { background: #262626; border-radius: 6px; padding: 12px; border: 1px solid #333; }
@@ -43,12 +44,12 @@
         .row input { flex-grow: 1; }
         label { font-size: 10px; text-transform: uppercase; color: #888; letter-spacing: 0.5px; }
         input, select { background: #333; border: 1px solid #444; padding: 8px 10px; color: #fff; border-radius: 4px; font-size: 13px; box-sizing: border-box; width: 100%; }
-        input[type="range"] { padding: 0; background: transparent; border: none; cursor: pointer; height: 28px; -webkit-appearance: none; }
+        input[type="range"] { padding: 0; background: transparent; border: none; cursor: pointer; height: 28px; -webkit-appearance: none; width: 100%; }
         input[type="range"]::-webkit-slider-runnable-track { background: #444; height: 6px; border-radius: 3px; }
         input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; background: #00ffcc; height: 16px; width: 16px; border-radius: 50%; margin-top: -5px; cursor: pointer; }
         input[type="color"] { padding: 2px; height: 34px; cursor: pointer; }
         
-        /* Visual Palette Swatches */
+        /* Visual Palette Swatches Grid */
         .palette-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 5px; }
         .palette-swatch { border: 2px solid #444; border-radius: 6px; height: 44px; display: flex; flex-direction: column; overflow: hidden; cursor: pointer; transition: all 0.2s; position: relative; }
         .palette-swatch:hover { border-color: #fff; transform: scale(1.04); }
@@ -65,15 +66,20 @@
         button { background: #3d3d3d; color: #fff; border: 1px solid #555; padding: 8px 12px; font-weight: bold; border-radius: 4px; cursor: pointer; font-size: 11px; text-transform: uppercase; }
         button:hover { border-color: #00ffcc; }
         .btn-accent { background: #00ffcc; color: #000; border: none; }
-        .btn-accent:hover { background: #ebd17a; }
+        .btn-accent:hover { background: #00e6b8; }
         .btn-download { background: #27ae60; color: #fff; border: none; padding: 12px; width: 100%; font-size: 13px; margin-top: 5px; }
         
+        /* PREMIUM PREMIUM EDITORIAL FOOTER LOGIC */
+        .editorial-credit-footer { font-size: 10px; font-weight: 400; color: #555555; text-align: center; margin-top: auto; padding-top: 15px; border-top: 1px dashed #2a2a2a; line-height: 1.6; letter-spacing: 0.5px; }
+        .editorial-credit-footer a { color: #666666; text-decoration: none; transition: color 0.2s; font-weight: 500; }
+        .editorial-credit-footer a:hover { color: #00ffcc; }
+
         @media (max-width: 768px) {
             body { flex-direction: column; overflow-y: auto !important; height: auto !important; }
             #sidebar { width: 100% !important; height: auto !important; order: 2; overflow-y: visible !important; padding: 15px; box-shadow: none; }
             #map-container { height: 500px; order: 1; flex-grow: 0; padding: 10px; overflow: hidden; }
             #poster-wrapper { width: 300px; height: 400px; }
-            #poster-label { height: 75px; }
+            #poster-label { height: 65px; }
             #label-main { font-size: 16px; letter-spacing: 3px; }
             #label-sub { font-size: 8px; }
             #search-results { width: calc(100% - 70px); }
@@ -125,7 +131,7 @@
                 <div class="row" style="margin-top: 8px;">
                     <div class="input-group" style="flex:1;">
                         <label>Heading Size</label>
-                        <input type="range" id="size-font-main" min="12" max="44" value="24" oninput="updateUI()">
+                        <input type="range" id="size-font-main" min="12" max="44" value="22" oninput="updateUI()">
                     </div>
                     <div class="input-group" style="flex:1;">
                         <label>Letter Spacing</label>
@@ -228,7 +234,7 @@
                 </div>
                 <div class="input-group" style="flex:1;">
                     <label>Subtitle Text</label>
-                    <input type="color" id="color-text-sub" value="#8fa0b2" oninput="updateUI()">
+                    <input type="color" id="color-text-sub" value="#888888" oninput="updateUI()">
                 </div>
             </div>
         </div>
@@ -245,9 +251,9 @@
             <button class="btn-download btn-accent" id="btn-export" onclick="processExportPipeline()">Generate Art File</button>
         </div>
 
-        <div id="legal-attribution">
-            Map data © <a href="https://openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors.<br>
-            Powered by OpenFreeMap & MapLibre.
+        <div class="editorial-credit-footer">
+            Map data © <a href="https://openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> contributors<br>
+            Engine architecture built via OpenFreeMap & MapLibre
         </div>
     </div>
 
@@ -269,6 +275,8 @@
     </div>
 
     <script>
+        let isStyleUpdating = false; // Thread block variable prevents infinite loops inside styledata callbacks
+
         const map = new maplibregl.Map({
             container: 'map',
             style: 'https://tiles.openfreemap.org/styles/dark', 
@@ -288,26 +296,26 @@
             'warm-terracotta': { title: 'Clay', bg: '#f4ebe1', highway: '#b85032', roads: '#d99b77', buildings: '#ebd0be', water: '#e0c3b1', parks: '#e3dfd5', trains: '#823720', textMain: '#612312', textSub: '#9c6f59' }
         };
 
+        // FIXED PIPELINE LOOP: Runs through the micro-delay execution variable safely
         map.on('styledata', () => {
+            if (isStyleUpdating) return; 
             adjustDetailRetentionParameters();
         });
 
         function adjustDetailRetentionParameters() {
-            if (!map.isStyleLoaded()) return;
+            if (!map.isStyleLoaded() || isStyleUpdating) return;
+            
+            isStyleUpdating = true; // Engage rendering block locks
             const layers = map.getStyle().layers;
             
-            // FIXED: Regex strings matching all naming combinations for expressways, primary links, and connectors
             const isHighwayRegex = /(motorway|trunk|primary|major|expressway|highway)/i;
             const isMinorRoadRegex = /(minor|residential|service|secondary|tertiary|street|road)/i;
             const isBuildingRegex = /(building|3d|structure|extrusion)/i;
-            const isWaterRegex = /(water|stream|river|lake|ocean|sea)/i;
-            const isParkRegex = /(park|leisure|forest|green|nature|landcover|cemetery)/i;
             const isTrainRegex = /(rail|train|transit|railway|subway)/i;
 
             const highwaySliderWidth = parseFloat(document.getElementById('width-highways').value);
 
             layers.forEach(layer => {
-                // FIXED: Multi-layered pattern search safely colors and overrides thicknesses
                 if (layer.type === 'line' && isHighwayRegex.test(layer.id)) {
                     map.setPaintProperty(layer.id, 'line-width', highwaySliderWidth);
                     map.setPaintProperty(layer.id, 'line-opacity', 0.95);
@@ -322,18 +330,12 @@
                     map.setPaintProperty(layer.id, 'line-opacity', 0.80);
                 }
                 
-                if (layer.type === 'symbol') {
-                    // Handled inside master visibility layer loop toggles
-                }
-                
-                // FORCE Layer settings for Buildings
                 if (isBuildingRegex.test(layer.id) || (layer.source-layer && isBuildingRegex.test(layer.source-layer))) {
                     if (layer.type === 'fill' || layer.type === 'fill-extrusion') {
                         map.setPaintProperty(layer.id, 'fill-opacity', 0.90); 
                     }
                 }
 
-                // FORCE Layer settings for Transit Tracks
                 if (isTrainRegex.test(layer.id)) {
                     if (layer.type === 'line') {
                         map.setPaintProperty(layer.id, 'line-width', 0.8);
@@ -341,6 +343,8 @@
                     }
                 }
             });
+            
+            isStyleUpdating = false; // Disengage layout engine lock strings
         }
 
         function generateVisualSwatches() {
@@ -381,10 +385,15 @@
             document.getElementById('color-text-main').value = preset.textMain;
             document.getElementById('color-text-sub').value = preset.textSub;
 
-            setTimeout(() => { updateUI(); }, 50);
+            // FIXED TIMEOUT DELAY PIPELINE: Safely allows the loop context to clear before triggering UI modifications pass
+            setTimeout(() => { updateUI(); }, 60);
         }
 
         function updateUI() {
+            if (!map.isStyleLoaded() || isStyleUpdating) return;
+
+            isStyleUpdating = true; // Lock styles while rendering colors matrices elements
+
             const bgVal = document.getElementById('color-bg').value;
             const highwayColorVal = document.getElementById('color-highways').value;
             const roadColorVal = document.getElementById('color-roads').value;
@@ -451,50 +460,48 @@
                 vignetteMask.style.display = "none";
             }
 
-            // FIXED MASTER VECTOR SWEEP: Forces execution path updates across all dynamic inputs safely
-            if (map.isStyleLoaded()) {
-                const layers = map.getStyle().layers;
-                
-                const isHighwayRegex = /(motorway|trunk|primary|major|expressway|highway)/i;
-                const isMinorRoadRegex = /(minor|residential|service|secondary|tertiary|street|road)/i;
-                const isBuildingRegex = /(building|3d|structure|extrusion)/i;
-                const isWaterRegex = /(water|stream|river|lake|ocean|sea)/i;
-                const isParkRegex = /(park|leisure|forest|green|nature|landcover|cemetery)/i;
-                const isTrainRegex = /(rail|train|transit|railway|subway)/i;
+            const layers = map.getStyle().layers;
+            const isHighwayRegex = /(motorway|trunk|primary|major|expressway|highway)/i;
+            const isMinorRoadRegex = /(minor|residential|service|secondary|tertiary|street|road)/i;
+            const isBuildingRegex = /(building|3d|structure|extrusion)/i;
+            const isWaterRegex = /(water|stream|river|lake|ocean|sea)/i;
+            const isParkRegex = /(park|leisure|forest|green|nature|landcover|cemetery)/i;
+            const isTrainRegex = /(rail|train|transit|railway|subway)/i;
 
-                const highwaySliderWidth = parseFloat(document.getElementById('width-highways').value);
+            const highwaySliderWidth = parseFloat(document.getElementById('width-highways').value);
 
-                layers.forEach(layer => {
-                    if (layer.type === 'background') {
-                        map.setPaintProperty(layer.id, 'background-color', bgVal);
+            layers.forEach(layer => {
+                if (layer.type === 'background') {
+                    map.setPaintProperty(layer.id, 'background-color', bgVal);
+                }
+                if (layer.type === 'fill' && (layer.id.includes('land') || layer.id.includes('area') || layer.id.includes('background'))) {
+                    if (!isParkRegex.test(layer.id)) {
+                        map.setPaintProperty(layer.id, 'fill-color', bgVal);
                     }
-                    if (layer.type === 'fill' && (layer.id.includes('land') || layer.id.includes('area') || layer.id.includes('background'))) {
-                        if (!isParkRegex.test(layer.id)) {
-                            map.setPaintProperty(layer.id, 'fill-color', bgVal);
-                        }
-                    }
-                    if (isBuildingRegex.test(layer.id) || (layer.source-layer && isBuildingRegex.test(layer.source-layer))) {
-                        map.setPaintProperty(layer.id, 'fill-color', buildingColorVal);
-                    }
-                    if (isWaterRegex.test(layer.id)) {
-                        if (layer.type === 'fill') map.setPaintProperty(layer.id, 'fill-color', waterColorVal);
-                        if (layer.type === 'line') map.setPaintProperty(layer.id, 'line-color', waterColorVal);
-                    }
-                    if (isParkRegex.test(layer.id)) {
-                        if (layer.type === 'fill') map.setPaintProperty(layer.id, 'fill-color', parkColorVal);
-                    }
-                    if (isTrainRegex.test(layer.id)) {
-                        if (layer.type === 'line') map.setPaintProperty(layer.id, 'line-color', trainColorVal);
-                    }
-                    if (layer.type === 'line' && isHighwayRegex.test(layer.id)) {
-                        map.setPaintProperty(layer.id, 'line-color', highwayColorVal);
-                        map.setPaintProperty(layer.id, 'line-width', highwaySliderWidth);
-                    }
-                    if (layer.type === 'line' && isMinorRoadRegex.test(layer.id) && !isHighwayRegex.test(layer.id)) {
-                        map.setPaintProperty(layer.id, 'line-color', roadColorVal);
-                    }
-                });
-            }
+                }
+                if (isBuildingRegex.test(layer.id) || (layer.source-layer && isBuildingRegex.test(layer.source-layer))) {
+                    map.setPaintProperty(layer.id, 'fill-color', buildingColorVal);
+                }
+                if (isWaterRegex.test(layer.id)) {
+                    if (layer.type === 'fill') map.setPaintProperty(layer.id, 'fill-color', waterColorVal);
+                    if (layer.type === 'line') map.setPaintProperty(layer.id, 'line-color', waterColorVal);
+                }
+                if (isParkRegex.test(layer.id)) {
+                    if (layer.type === 'fill') map.setPaintProperty(layer.id, 'fill-color', parkColorVal);
+                }
+                if (isTrainRegex.test(layer.id)) {
+                    if (layer.type === 'line') map.setPaintProperty(layer.id, 'line-color', trainColorVal);
+                }
+                if (layer.type === 'line' && isHighwayRegex.test(layer.id)) {
+                    map.setPaintProperty(layer.id, 'line-color', highwayColorVal);
+                    map.setPaintProperty(layer.id, 'line-width', highwaySliderWidth);
+                }
+                if (layer.type === 'line' && isMinorRoadRegex.test(layer.id) && !isHighwayRegex.test(layer.id)) {
+                    map.setPaintProperty(layer.id, 'line-color', roadColorVal);
+                }
+            });
+
+            isStyleUpdating = false; // Disengage styling lock
         }
 
         function toggleMapLayers() {
@@ -541,7 +548,7 @@
                     }
                 }
             });
-            updateUI();
+            setTimeout(() => { updateUI(); }, 40);
         }
 
         async function searchLocation() {
@@ -579,13 +586,13 @@
                         const lonDir = lon >= 0 ? 'E' : 'W';
                         document.getElementById('text-sub-input').value = `${(nameArray[2] || nameArray[1] || '').trim().toUpperCase()} | ${Math.abs(lat).toFixed(4)}° ${latDir}, ${Math.abs(lon).toFixed(4)}° ${lonDir}`;
                         
-                        updateUI();
+                        setTimeout(() => { updateUI(); }, 60);
                         resultsBox.style.display = 'none';
                     };
                     resultsBox.appendChild(div);
                 });
             } catch (err) {
-                console.error("Geocoding trace failed: ", err);
+                console.error("Geocoding lookup exception tracing: ", err);
             }
         }
 
@@ -616,7 +623,7 @@
                     const softEdgeToggle = document.getElementById('style-soft-edges').checked;
                     const vignetteIntensity = parseInt(document.getElementById('vignette-intensity').value);
 
-                    const labelBlockHeightSrc = textVisible ? 105 : 0;
+                    const labelBlockHeightSrc = textVisible ? 75 : 0; // FIXED: Maps aspect ratios matching the new tight 75px banner
                     
                     const exportCanvas = document.createElement('canvas');
                     exportCanvas.width = lockedWidthBase * renderMultiplier;
@@ -658,20 +665,20 @@
                         ctx.textBaseline = 'middle';
 
                         if (textFloatToggle) {
-                            const overlayCenterY = exportCanvas.height - (75 * renderMultiplier);
+                            const overlayCenterY = exportCanvas.height - (60 * renderMultiplier);
                             
-                            ctx.fillStyle = "rgba(0,0,0,0.75)";
-                            ctx.fillRect(exportCanvas.width * 0.12, overlayCenterY - (40 * renderMultiplier), exportCanvas.width * 0.76, 85 * renderMultiplier);
+                            ctx.fillStyle = "rgba(0,0,0,0.85)";
+                            ctx.fillRect(exportCanvas.width * 0.12, overlayCenterY - (30 * renderMultiplier), exportCanvas.width * 0.76, 65 * renderMultiplier);
                             
                             ctx.fillStyle = mainTextClass;
                             ctx.font = `bold ${Math.floor(fontSizeMainSrc * renderMultiplier)}px ${fontSelected}`;
                             ctx.letterSpacing = `${letterSpacingSrc * renderMultiplier}px`;
-                            ctx.fillText(titleValue, exportCanvas.width / 2, overlayCenterY - (8 * renderMultiplier));
+                            ctx.fillText(titleValue, exportCanvas.width / 2, overlayCenterY - (6 * renderMultiplier));
                             
                             ctx.fillStyle = subTextClass;
-                            ctx.font = `${Math.floor(10 * renderMultiplier)}px ${fontSelected}`;
+                            ctx.font = `${Math.floor(9 * renderMultiplier)}px ${fontSelected}`;
                             ctx.letterSpacing = `${2 * renderMultiplier}px`;
-                            ctx.fillText(subtitleValue, exportCanvas.width / 2, overlayCenterY + (18 * renderMultiplier));
+                            ctx.fillText(subtitleValue, exportCanvas.width / 2, overlayCenterY + (14 * renderMultiplier));
                         } else {
                             const bannerCenterY = mapDestHeight + ((exportCanvas.height - mapDestHeight) / 2);
                             
@@ -681,12 +688,12 @@
                             ctx.fillStyle = mainTextClass;
                             ctx.font = `bold ${Math.floor(fontSizeMainSrc * renderMultiplier)}px ${fontSelected}`;
                             ctx.letterSpacing = `${letterSpacingSrc * renderMultiplier}px`;
-                            ctx.fillText(titleValue, exportCanvas.width / 2, bannerCenterY - (12 * renderMultiplier));
+                            ctx.fillText(titleValue, exportCanvas.width / 2, bannerCenterY - (8 * renderMultiplier));
                             
                             ctx.fillStyle = subTextClass;
-                            ctx.font = `${Math.floor(10 * renderMultiplier)}px ${fontSelected}`;
+                            ctx.font = `${Math.floor(9 * renderMultiplier)}px ${fontSelected}`;
                             ctx.letterSpacing = `${2 * renderMultiplier}px`;
-                            ctx.fillText(subtitleValue, exportCanvas.width / 2, bannerCenterY + (12 * renderMultiplier));
+                            ctx.fillText(subtitleValue, exportCanvas.width / 2, bannerCenterY + (10 * renderMultiplier));
                         }
                     }
 
@@ -696,7 +703,7 @@
                     downloadLink.href = exportCanvas.toDataURL('image/png');
                     downloadLink.click();
                 } catch (error) {
-                    console.error("Export System Failure: ", error);
+                    console.error("Export Compiler system fail: ", error);
                     alert("Export Engine error encountered.");
                 } finally {
                     exportBtn.innerText = "Generate Art File";
@@ -706,7 +713,7 @@
         }
         
         generateVisualSwatches();
-        setTimeout(() => { selectSwatchTheme('cyber-neon'); }, 400);
+        setTimeout(() => { selectSwatchTheme('cyber-neon'); }, 450);
     </script>
 </body>
 </html>
