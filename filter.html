@@ -43,14 +43,40 @@
     </style>
 </head>
 <body>
-    <section class="hero is-info is-bold">
-        <div class="hero-body">
-            <div class="container">
-                <h1 class="title">Expense Analytics</h1>
-                <a href="index.html" class="button is-info is-inverted is-outlined is-small">← Back to Entry Form</a>
-            </div>
+    <section class="hero is-primary is-bold">
+      <div class="hero-body">
+        <div class="container">
+          <h1 class="title">KAMACON Budget (v1.3)</h1>
         </div>
+      </div>
+      <div class="hero-foot">
+        <nav class="tabs is-boxed is-fullwidth is-small">
+          <div class="container">
+            <ul>
+              <li id="tab-entry">
+                <a href="index.html">
+                  <span class="icon is-small">📝</span>
+                  <span>Entry</span>
+                </a>
+              </li>
+              <li id="tab-analytics">
+                <a href="filter.html">
+                  <span class="icon is-small">📊</span>
+                  <span>Analytics</span>
+                </a>
+              </li>
+              <li id="tab-review">
+                <a href="review.html">
+                  <span class="icon is-small">⏳</span>
+                  <span>Review <span id="navCounter" class="tag is-warning is-light ml-1" style="display: none; padding: 0.25em 0.5em; font-weight: bold; font-size: 0.75rem; border-radius: 290486px;">0</span></span>
+                </a>
+              </li>
+            </ul>
+          </div>
+        </nav>
+      </div>
     </section>
+    <script>document.getElementById('tab-analytics').classList.add('is-active');</script>
 
     <div class="container mt-4 p-2">
         <div class="filter-section">
@@ -249,6 +275,36 @@
             document.getElementById('maxAmt').value = "";
             document.getElementById('filterNotes').value = "";
             applyFilters();
+        }
+
+        // --- Background Shortcut Queue Counter ---
+        function fetchPendingCountForTab() {
+            const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbywdFiaQvUU8idDmhBiTqu8-Ir5-nFl1LNbIKrBOnm4QuWLiixY4rDOCbM2ZV7It0oc/exec";
+            const jsonpUrl = `${SCRIPT_URL}?action=getPendingTransactions&callback=updateTabCounterOnly`;
+            const script = document.createElement('script');
+            script.src = jsonpUrl;
+            document.head.appendChild(script);
+        }
+    
+        window.updateTabCounterOnly = function(response) {
+            const navCounter = document.getElementById('navCounter');
+            if (!navCounter) return;
+            
+            const pendingCount = response.pending ? response.pending.length : 0;
+            
+            if (pendingCount > 0) {
+                navCounter.innerText = pendingCount;
+                navCounter.style.display = "inline-block"; // Unhide the badge if items exist
+            } else {
+                navCounter.style.display = "none"; // Keep hidden if empty
+            }
+        };
+    
+        // Safely append to your existing window onload hook
+        if (window.addEventListener) {
+            window.addEventListener('load', fetchPendingCountForTab);
+        } else if (window.attachEvent) {
+            window.attachEvent('onload', fetchPendingCountForTab);
         }
     </script>
 </body>
