@@ -65,17 +65,33 @@
         </div>
       </div>
       <div class="hero-foot">
-        <nav class="tabs is-boxed is-fullwidth">
+        <nav class="tabs is-boxed is-fullwidth is-small">
           <div class="container">
             <ul>
-              <li><a href="index.html"><span class="icon is-small">📝</span><span>Entry Form</span></a></li>
-              <li><a href="filter.html"><span class="icon is-small">📊</span><span>Analytics</span></a></li>
-              <li class="is-active"><a><span class="icon is-small">⏳</span><span>Review Queue</span></a></li>
+              <li id="tab-entry">
+                <a href="index.html">
+                  <span class="icon is-small">📝</span>
+                  <span>Entry</span>
+                </a>
+              </li>
+              <li id="tab-analytics">
+                <a href="filter.html">
+                  <span class="icon is-small">📊</span>
+                  <span>Analytics</span>
+                </a>
+              </li>
+              <li id="tab-review">
+                <a href="review.html">
+                  <span class="icon is-small">⏳</span>
+                  <span>Review <span id="navCounter" class="tag is-warning is-light ml-1" style="display: none; padding: 0.25em 0.5em; font-weight: bold; font-size: 0.75rem; border-radius: 290486px;">0</span></span>
+                </a>
+              </li>
             </ul>
           </div>
         </nav>
       </div>
     </section>
+    <script>document.getElementById('tab-review').classList.add('is-active');</script>
 
     <div class="container mt-6 pb-6">
         <div class="is-flex is-justify-content-between is-align-items-center mb-5">
@@ -178,11 +194,23 @@
       window.renderQueue = function(response) {
           const container = document.getElementById('queueContainer');
           const countBadge = document.getElementById('queueCount');
+          const navCounter = document.getElementById('navCounter'); // Target the navigation tab element
           
           pendingTransactions = response.pending || [];
-          countBadge.innerText = `${pendingTransactions.length} Pending`;
+          const totalPending = pendingTransactions.length;
+          
+          // Update main page text badge
+          countBadge.innerText = `${totalPending} Pending`;
 
-          if (pendingTransactions.length === 0) {
+          // UPDATE THE NAVIGATION TAB COUNTER LIVE
+          if (totalPending > 0) {
+              navCounter.innerText = totalPending;
+              navCounter.style.display = "inline-block"; // Unhide badge if pending rows exist
+          } else {
+              navCounter.style.display = "none"; // Keep hidden if empty
+          }
+
+          if (totalPending === 0) {
               container.innerHTML = `
                 <div class="has-text-centered py-6">
                     <p class="is-size-2">🎉</p>
@@ -196,7 +224,7 @@
               const d = new Date(tx["Transaction Date"]);
               const dateStr = isNaN(d.getTime()) ? tx["Transaction Date"] : `${d.getUTCMonth() + 1}/${d.getUTCDate()}`;
               
-              // FIXED: Changed keys to match your exact sheet headers "Original Val" and "Final USD Expen"
+              // Handle your exact spreadsheet layout tracking header properties cleanly
               const rawAmount = tx["Original Val"] || tx["Final USD Expen"] || 0;
               
               html += `
