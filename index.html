@@ -88,20 +88,37 @@
     <section class="hero is-primary is-bold">
       <div class="hero-body">
         <div class="container">
-          <h1 class="title">KAMACON Budget (v1.4)</h1>
+          <h1 class="title">KAMACON Budget (v1.3)</h1>
         </div>
       </div>
       <div class="hero-foot">
-        <nav class="tabs is-boxed is-fullwidth">
+        <nav class="tabs is-boxed is-fullwidth is-small">
           <div class="container">
             <ul>
-              <li class="is-active"><a><span class="icon is-small">📝</span><span>Entry Form</span></a></li>
-              <li><a href="filter.html"><span class="icon is-small">📊</span><span>Analytics</span></a></li>
+              <li id="tab-entry">
+                <a href="index.html">
+                  <span class="icon is-small">📝</span>
+                  <span>Entry</span>
+                </a>
+              </li>
+              <li id="tab-analytics">
+                <a href="filter.html">
+                  <span class="icon is-small">📊</span>
+                  <span>Analytics</span>
+                </a>
+              </li>
+              <li id="tab-review">
+                <a href="review.html">
+                  <span class="icon is-small">⏳</span>
+                  <span>Review <span id="navCounter" class="tag is-warning is-light ml-1" style="display: none; padding: 0.25em 0.5em; font-weight: bold; font-size: 0.75rem; border-radius: 290486px;">0</span></span>
+                </a>
+              </li>
             </ul>
           </div>
         </nav>
       </div>
     </section>
+    <script>document.getElementById('tab-entry').classList.add('is-active');</script>
 
     <!-- Entry Form: Now perfectly aligned and centered -->
     <form id="form" class="container py-6" method="POST">
