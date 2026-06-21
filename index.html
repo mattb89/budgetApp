@@ -745,6 +745,35 @@ function handleExpensesData(data) {
     // to refresh the table (within the .then(function (data) { ... } block)
     // You will need to re-implement the new logic we used for the FINAL USD EXPENSE
     // and Payer fields, as your current submit logic is from before those fixes.
+    // --- Background Shortcut Queue Counter ---
+    function fetchPendingCountForTab() {
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbywdFiaQvUU8idDmhBiTqu8-Ir5-nFl1LNbIKrBOnm4QuWLiixY4rDOCbM2ZV7It0oc/exec";
+        const jsonpUrl = `${SCRIPT_URL}?action=getPendingTransactions&callback=updateTabCounterOnly`;
+        const script = document.createElement('script');
+        script.src = jsonpUrl;
+        document.head.appendChild(script);
+    }
+
+    window.updateTabCounterOnly = function(response) {
+        const navCounter = document.getElementById('navCounter');
+        if (!navCounter) return;
+        
+        const pendingCount = response.pending ? response.pending.length : 0;
+        
+        if (pendingCount > 0) {
+            navCounter.innerText = pendingCount;
+            navCounter.style.display = "inline-block"; // Unhide the badge if items exist
+        } else {
+            navCounter.style.display = "none"; // Keep hidden if empty
+        }
+    };
+
+    // Safely append to your existing window onload hook
+    if (window.addEventListener) {
+        window.addEventListener('load', fetchPendingCountForTab);
+    } else if (window.attachEvent) {
+        window.attachEvent('onload', fetchPendingCountForTab);
+    }
     </script>
   </body>
 </html>
