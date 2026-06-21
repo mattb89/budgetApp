@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>KAMACON Review Queue</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css" />
+    <style>
+        body {
+            font-family: 'Inter', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            font-size: 16px;
+            background-color: #f8fafc;
+        }
+        .hero.is-primary.is-bold { padding: 1rem 1.0rem; }
+        .hero .hero-body { padding: .25rem; }
+        .hero .title { font-size: 1.5rem; }
+        
+        .container {
+            max-width: 800px !important;
+            margin: 0 auto !important;
+            padding-left: 15px !important;
+            padding-right: 15px !important;
+        }
+
+        .label {
+            font-size: 16px;
+            font-weight: 600;
+            color: #4a4a4a;
+        }
+
+        .pending-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border-left: 5px solid #ffdd57;
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.2s;
+        }
+        .pending-card:hover {
+            transform: translateY(-2px);
+            background-color: #fafafa;
+        }
+
+        .modal-card {
+            border-radius: 16px;
+        }
+        .modal-card-head {
+            background-color: #00d1b2;
+        }
+        .modal-card-title {
+            color: white !important;
+            font-weight: bold;
+        }
+    </style>
+  </head>
+  <body>
+    <section class="hero is-primary is-bold">
+      <div class="hero-body">
+        <div class="container">
+          <h1 class="title">KAMACON Budget (v1.3)</h1>
+        </div>
+      </div>
+      <div class="hero-foot">
+        <nav class="tabs is-boxed is-fullwidth">
+          <div class="container">
+            <ul>
+              <li><a href="index.html"><span class="icon is-small">📝</span><span>Entry Form</span></a></li>
+              <li><a href="filter.html"><span class="icon is-small">📊</span><span>Analytics</span></a></li>
+              <li class="is-active"><a><span class="icon is-small">⏳</span><span>Review Queue</span></a></li>
+            </ul>
+          </div>
+        </nav>
+      </div>
+    </section>
+
+    <div class="container mt-6 pb-6">
+        <div class="is-flex is-justify-content-between is-align-items-center mb-5">
+            <h2 class="title is-4 mb-0">iOS Shortcut Queue</h2>
+            <span id="queueCount" class="tag is-warning is-medium has-text-weight-bold">0 Pending</span>
+        </div>
+
+        <div id="queueContainer">
+            <p class="has-text-centered has-text-grey py-6">Scanning database for PENDING shortcut logs...</p>
+        </div>
+    </div>
+
+    <div class="modal" id="editModal">
+      <div class="modal-background" onclick="closeModal()"></div>
+      <div class="modal-card px-3">
+        <header class="modal-card-head">
+          <p class="modal-card-title">Update Shortcut Transaction</p>
+          <button class="delete" aria-label="close" onclick="closeModal()"></button>
+        </header>
+        <section class="modal-card-body">
+          <form id="modalForm">
+            <input type="hidden" id="editRowIndex" name="RowIndex">
+
+            <div class="field">
+              <label class="label">Transaction Date</label>
+              <div class="control"><input id="editDate" class="input" type="date" name="Transaction Date" required></div>
+            </div>
+
+            <div class="field">
+              <label class="label">Amount (USD)</label>
+              <div class="control"><input id="editAmount" class="input" type="text" inputmode="decimal" name="Final USD Expense" required></div>
+            </div>
+
+            <div class="field">
+              <label class="label">Category</label>
+              <div class="control">
+                <div class="select is-fullwidth">
+                  <select id="editCategory" name="Category" required>
+                    <option value="">--Select a category--</option>
+                    <option value="Food">🍕 Food</option>
+                    <option value="Gas">🚗 Gas</option>
+                    <option value="Groceries">🛒 Groceries</option>
+                    <option value="Personal Care">💇🏻 Personal Care</option>
+                    <option value="Entertainment">🍿 Entertainment</option>
+                    <option value="K Funny Money">😜 K Funny Money</option>
+                    <option value="M Funny Money">😜 M Funny Money</option>
+                    <option value="Travel">🌎 Travel</option>
+                    <option value="Shopping">🛍️ Shopping</option>
+                    <option value="Saving">🏦 Saving</option>
+                    <option value="Investment">📈 Investment</option>
+                    <option value="Other">📥 Other</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="checkbox card p-3 is-shadowless border" style="width: 100%; border: 1px solid #dbdbdb;">
+                <input id="editSplit" type="checkbox" name="Split Expense" value="Yes"> 
+                <span class="ml-2">Check if this was a split expense</span>
+              </label>
+            </div>
+
+            <div class="field">
+              <label class="label">Who Paid?</label>
+              <div class="control">
+                <label class="radio mr-4"><input type="radio" name="Payer" value="Matt" id="payerMatt"> Matt</label>
+                <label class="radio"><input type="radio" name="Payer" value="Katie" id="payerKatie"> Katie</label>
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="label">Notes</label>
+              <div class="control"><textarea id="editNotes" class="textarea" name="Notes" required></textarea></div>
+            </div>
+          </form>
+        </section>
+        <footer class="modal-card-foot is-justify-content-flex-end">
+          <button class="button is-light" onclick="closeModal()">Cancel</button>
+          <button class="button is-primary px-5" id="saveBtn" onclick="submitUpdate()">Finalize Transaction</button>
+        </footer>
+      </div>
+    </div>
+
+    <div id="message" style="display: none; position: fixed; top: 20px; right: 20px; z-index: 999; font-weight: bold; padding: 15px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"></div>
+
+    <script>
+      const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbywdFiaQvUU8idDmhBiTqu8-Ir5-nFl1LNbIKrBOnm4QuWLiixY4rDOCbM2ZV7It0oc/exec";
+      let pendingTransactions = [];
+
+      // 1. Query Spreadsheet Engine for shortcuts matching PENDING
+      function fetchPendingQueue() {
+          const jsonpUrl = `${SCRIPT_URL}?action=getPendingTransactions&callback=renderQueue`;
+          const script = document.createElement('script');
+          script.src = jsonpUrl;
+          document.head.appendChild(script);
+      }
+
+      // 2. Render UI Card Elements dynamically
+      window.renderQueue = function(response) {
+          const container = document.getElementById('queueContainer');
+          const countBadge = document.getElementById('queueCount');
+          
+          pendingTransactions = response.pending || [];
+          countBadge.innerText = `${pendingTransactions.length} Pending`;
+
+          if (pendingTransactions.length === 0) {
+              container.innerHTML = `
+                <div class="has-text-centered py-6">
+                    <p class="is-size-2">🎉</p>
+                    <p class="has-text-grey font-weight-bold mt-2">All shortcut inputs cleared and fully reviewed!</p>
+                </div>`;
+              return;
+          }
+
+          let html = "";
+          pendingTransactions.forEach((tx) => {
+              // Parse date readable string layout
+              const d = new Date(tx["Transaction Date"]);
+              const dateStr = isNaN(d.getTime()) ? tx["Transaction Date"] : `${d.getUTCMonth() + 1}/${d.getUTCDate()}`;
+              
+              html += `
+                <div class="pending-card" onclick="openEditModal(${tx.RowIndex})">
+                    <div class="is-flex is-justify-content-between is-align-items-center">
+                        <div>
+                            <span class="tag is-light mr-2">${dateStr}</span>
+                            <strong class="is-size-5">$${parseFloat(tx["Original Value"] || tx["Final USD Expense"]).toFixed(2)}</strong>
+                        </div>
+                        <span class="is-size-7 has-text-grey-light">Row #${tx.RowIndex}</span>
+                    </div>
+                    <p class="is-size-7 has-text-grey mt-2 mb-0"><strong>Raw Notes:</strong> ${tx.Notes}</p>
+                </div>`;
+          });
+          container.innerHTML = html;
+      };
+
+      // 3. Modal Controls
+      function openEditModal(rowIndex) {
+          const tx = pendingTransactions.find(t => t.RowIndex === rowIndex);
+          if (!tx) return;
+
+          document.getElementById('editRowIndex').value = tx.RowIndex;
+          document.getElementById('editAmount').value = parseFloat(tx["Original Value"] || tx["Final USD Expense"] || 0).toFixed(2);
+          document.getElementById('editCategory').value = tx.Category || "";
+          document.getElementById('editNotes').value = tx.Notes.replace('PENDING', '').trim(); // Remove "PENDING" keyword automatically for editing
+          document.getElementById('editSplit').checked = tx["Split Expense"] === "Yes";
+          
+          if (tx.Payer === "Matt") document.getElementById('payerMatt').checked = true;
+          else if (tx.Payer === "Katie") document.getElementById('payerKatie').checked = true;
+
+          // Convert Spreadsheet Raw Date configuration cleanly to standard HTML Picker string match
+          if (tx["Transaction Date"]) {
+              const d = new Date(tx["Transaction Date"]);
+              if (!isNaN(d.getTime())) {
+                  const yyyy = d.getUTCFullYear();
+                  const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
+                  const dd = String(d.getUTCDate()).padStart(2, '0');
+                  document.getElementById('editDate').value = `${yyyy}-${mm}-${dd}`;
+              }
+          }
+
+          document.getElementById('editModal').classList.add('is-active');
+      }
+
+      function closeModal() {
+          document.getElementById('editModal').classList.remove('is-active');
+      }
+
+      // 4. Update Processing Dispatch Block
+      function submitUpdate() {
+          const saveBtn = document.getElementById('saveBtn');
+          saveBtn.classList.add('is-loading');
+
+          const formElement = document.getElementById('modalForm');
+          const formData = new FormData(formElement);
+          
+          // Capture manual check elements safely
+          const payerChecked = document.querySelector('input[name="Payer"]:checked');
+          const splitChecked = document.getElementById('editSplit').checked;
+          
+          let params = new URLSearchParams();
+          params.append('action', 'updatePendingTransaction');
+          params.append('RowIndex', document.getElementById('editRowIndex').value);
+          params.append('Transaction Date', document.getElementById('editDate').value);
+          params.append('Final USD Expense', document.getElementById('editAmount').value);
+          params.append('Category', document.getElementById('editCategory').value);
+          params.append('Notes', document.getElementById('editNotes').value);
+          params.append('Payer', payerChecked ? payerChecked.value : '');
+          params.append('Split Expense', splitChecked ? 'Yes' : 'No');
+
+          fetch(SCRIPT_URL, {
+              method: "POST",
+              body: params.toString(),
+              headers: { "Content-Type": "application/x-www-form-urlencoded" }
+          })
+          .then(res => res.text())
+          .then(() => {
+              saveBtn.classList.remove('is-loading');
+              closeModal();
+              showNotification("Transaction updated and finalized!");
+              fetchPendingQueue(); // Reload queue immediately
+          })
+          .catch(err => {
+              console.error(err);
+              saveBtn.classList.remove('is-loading');
+              showNotification("Error saving transaction data.", true);
+          });
+      }
+
+      function showNotification(text, isError = false) {
+          const msg = document.getElementById('message');
+          msg.textContent = text;
+          msg.style.display = "block";
+          msg.style.backgroundColor = isError ? "#fff5f5" : "#e6fffa";
+          msg.style.color = isError ? "#9b2c2c" : "#004d40";
+          setTimeout(() => { msg.style.display = "none"; }, 3000);
+      }
+
+      window.onload = fetchPendingQueue;
+    </script>
+  </body>
+</html>
