@@ -746,6 +746,7 @@ function handleExpensesData(data) {
     // You will need to re-implement the new logic we used for the FINAL USD EXPENSE
     // and Payer fields, as your current submit logic is from before those fixes.
     // --- Background Shortcut Queue Counter ---
+    // --- Background Shortcut Queue Counter ---
     function fetchPendingCountForTab() {
         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbywdFiaQvUU8idDmhBiTqu8-Ir5-nFl1LNbIKrBOnm4QuWLiixY4rDOCbM2ZV7It0oc/exec";
         const jsonpUrl = `${SCRIPT_URL}?action=getPendingTransactions&callback=updateTabCounterOnly`;
@@ -762,18 +763,16 @@ function handleExpensesData(data) {
         
         if (pendingCount > 0) {
             navCounter.innerText = pendingCount;
-            navCounter.style.display = "inline-block"; // Unhide the badge if items exist
+            navCounter.style.display = "inline-block";
         } else {
-            navCounter.style.display = "none"; // Keep hidden if empty
+            navCounter.style.display = "none";
         }
     };
 
-    // Safely append to your existing window onload hook
-    if (window.addEventListener) {
-        window.addEventListener('load', fetchPendingCountForTab);
-    } else if (window.attachEvent) {
-        window.attachEvent('onload', fetchPendingCountForTab);
-    }
+    // --- UNIFIED INITIALIZATION LOOP ---
+    // This executes both calls sequentially on page load without event listener conflicts
+    fetchAndRenderExpenses();
+    fetchPendingCountForTab();
     </script>
   </body>
 </html>
