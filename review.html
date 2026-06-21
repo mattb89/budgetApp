@@ -193,16 +193,18 @@
 
           let html = "";
           pendingTransactions.forEach((tx) => {
-              // Parse date readable string layout
               const d = new Date(tx["Transaction Date"]);
               const dateStr = isNaN(d.getTime()) ? tx["Transaction Date"] : `${d.getUTCMonth() + 1}/${d.getUTCDate()}`;
+              
+              // FIXED: Changed keys to match your exact sheet headers "Original Val" and "Final USD Expen"
+              const rawAmount = tx["Original Val"] || tx["Final USD Expen"] || 0;
               
               html += `
                 <div class="pending-card" onclick="openEditModal(${tx.RowIndex})">
                     <div class="is-flex is-justify-content-between is-align-items-center">
                         <div>
                             <span class="tag is-light mr-2">${dateStr}</span>
-                            <strong class="is-size-5">$${parseFloat(tx["Original Value"] || tx["Final USD Expense"]).toFixed(2)}</strong>
+                            <strong class="is-size-5">$${parseFloat(rawAmount).toFixed(2)}</strong>
                         </div>
                         <span class="is-size-7 has-text-grey-light">Row #${tx.RowIndex}</span>
                     </div>
