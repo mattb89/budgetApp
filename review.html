@@ -225,7 +225,7 @@
               const dateStr = isNaN(d.getTime()) ? tx["Transaction Date"] : `${d.getUTCMonth() + 1}/${d.getUTCDate()}`;
               
               // Handle your exact spreadsheet layout tracking header properties cleanly
-              const rawAmount = tx["Original Val"] || tx["Final USD Expen"] || 0;
+              const rawAmount = tx["Original Value"] || tx["Final USD Expense"] || 0;
               
               html += `
                 <div class="pending-card" onclick="openEditModal(${tx.RowIndex})">
