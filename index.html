@@ -132,13 +132,21 @@
       <div class="field">
         <label class="label" id="amount-label">USD Value</label>
         <div class="control">
-          <input id="amount" class="input is-medium" type="text" inputmode="decimal" placeholder="0.00" name="Original Value">
+          <input 
+            id="amount" 
+            class="input is-medium" 
+            type="text" 
+            inputmode="decimal" 
+            placeholder="0.00" 
+            name="Original Value"
+            onchange="this.value = formatDecimal(this.value)"
+          >
         </div>
         <label class="checkbox mt-2">
             <input id="euroCheckbox" type="checkbox" onchange="updateAmountLabel()"> EUR Entry
         </label>
       </div>
-
+      
       <div id="calculation-summary" style="display: none;">
           <p class="has-text-primary">
               Calculated USD: $<span id="calculated-usd">0.00</span>
@@ -741,6 +749,36 @@ function handleExpensesData(data) {
     // Ensure the fetch function runs when the page loads
     fetchAndRenderExpenses();
 
+    // Target the amount field
+  const moneyInput = document.getElementById("amount");
+
+  // Format as you type (Right-to-Left ATM style mask)
+  moneyInput.addEventListener("input", function (e) {
+      // Remove everything that isn't a digit
+      let digits = e.target.value.replace(/\D/g, "");
+      
+      if (!digits) {
+          e.target.value = "";
+          return;
+      }
+      
+      // Convert to a pure integer and shift the decimal two places left
+      let numericValue = parseInt(digits, 10) / 100;
+      
+      // Update the input field value in real-time
+      e.target.value = numericValue.toFixed(2);
+      
+      // Re-trigger your existing backend calculator if it exists on the page
+      if (typeof calculateAndDisplay === "function") {
+          calculateAndDisplay();
+      }
+  });
+
+  // Helper utility to clean up loose entries (e.g., if a user pastes a value)
+  function formatDecimal(value) {
+      let cleanVal = parseFloat(value.replace(/[^0-9.]/g, ""));
+      return isNaN(cleanVal) ? "" : cleanVal.toFixed(2);
+  }
     // Also call this function in the success handler of your form submission 
     // to refresh the table (within the .then(function (data) { ... } block)
     // You will need to re-implement the new logic we used for the FINAL USD EXPENSE
