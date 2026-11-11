@@ -242,6 +242,11 @@
     <div id="message" style="display: none; position: fixed; top: 20px; right: 20px; z-index: 999; font-weight: bold; padding: 15px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);"></div>
 
     <script>
+      function getCategory(row) {
+          const c = (row["Category"] || "").toString().trim();
+          return c === "" ? "Other" : c;
+      }
+
       let viewOffset = 0; // 0 = current month, -1 = last month, etc.
 
       function changeMonth(step) {
@@ -494,7 +499,7 @@
 
     // ***** This is the logic for grabbing data from the google sheets ***** //
     // Place this function inside your <script> tag in index.html
-function handleExpensesData(data) {
+    function handleExpensesData(data) {
         console.log("Data received from Script:", data);
         
         const summaryContainer = document.getElementById('categorySummary');
@@ -531,7 +536,7 @@ function handleExpensesData(data) {
         });
 
         monthlyExpenses.forEach(row => {
-            const cat = row["Category"] || "Other";
+            const cat = getCategory(row);
             const amount = parseFloat(row["Final USD Expense"]) || 0;
             actuals[cat] = (actuals[cat] || 0) + amount;
             grandTotal += amount;
@@ -658,7 +663,7 @@ function handleExpensesData(data) {
         // Cleanup
         const oldScript = document.getElementById('jsonpScript');
         if(oldScript) oldScript.remove(); 
-    }
+    } //** END OF function handleExpensesData(data) **
 
     // **** FUNCTION: ADDS THE TOGGLE FUNCTIONALITY OF THE CATEGORIES ****
     function toggleCategoryDetails(category) {
@@ -681,7 +686,7 @@ function handleExpensesData(data) {
             const date = new Date(row["Transaction Date"]);
             // Match transactions to the month/year being VIEWED
             const isThisMonth = date.getUTCMonth() === vMonth && date.getUTCFullYear() === vYear;
-            const isThisCategory = row["Category"] === category;
+            const isThisCategory = getCategory(row) === category;
             return isThisMonth && isThisCategory;
         }).reverse();
 
@@ -751,35 +756,35 @@ function handleExpensesData(data) {
     fetchAndRenderExpenses();
 
     // Target the amount field
-  const moneyInput = document.getElementById("amount");
+    const moneyInput = document.getElementById("amount");
 
-  // Format as you type (Right-to-Left ATM style mask)
-  moneyInput.addEventListener("input", function (e) {
-      // Remove everything that isn't a digit
-      let digits = e.target.value.replace(/\D/g, "");
-      
-      if (!digits) {
-          e.target.value = "";
-          return;
-      }
-      
-      // Convert to a pure integer and shift the decimal two places left
-      let numericValue = parseInt(digits, 10) / 100;
-      
-      // Update the input field value in real-time
-      e.target.value = numericValue.toFixed(2);
-      
-      // Re-trigger your existing backend calculator if it exists on the page
-      if (typeof calculateAndDisplay === "function") {
-          calculateAndDisplay();
-      }
-  });
+    // Format as you type (Right-to-Left ATM style mask)
+    moneyInput.addEventListener("input", function (e) {
+        // Remove everything that isn't a digit
+        let digits = e.target.value.replace(/\D/g, "");
+        
+        if (!digits) {
+            e.target.value = "";
+            return;
+        }
+        
+        // Convert to a pure integer and shift the decimal two places left
+        let numericValue = parseInt(digits, 10) / 100;
+        
+        // Update the input field value in real-time
+        e.target.value = numericValue.toFixed(2);
+        
+        // Re-trigger your existing backend calculator if it exists on the page
+        if (typeof calculateAndDisplay === "function") {
+            calculateAndDisplay();
+        }
+    });
 
-  // Helper utility to clean up loose entries (e.g., if a user pastes a value)
-  function formatDecimal(value) {
-      let cleanVal = parseFloat(value.replace(/[^0-9.]/g, ""));
-      return isNaN(cleanVal) ? "" : cleanVal.toFixed(2);
-  }
+    // Helper utility to clean up loose entries (e.g., if a user pastes a value)
+    function formatDecimal(value) {
+        let cleanVal = parseFloat(value.replace(/[^0-9.]/g, ""));
+        return isNaN(cleanVal) ? "" : cleanVal.toFixed(2);
+    }
     // Also call this function in the success handler of your form submission 
     // to refresh the table (within the .then(function (data) { ... } block)
     // You will need to re-implement the new logic we used for the FINAL USD EXPENSE
