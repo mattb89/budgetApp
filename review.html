@@ -55,6 +55,20 @@
             color: white !important;
             font-weight: bold;
         }
+        .delete-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+            padding: 4px 6px;
+            border-radius: 6px;
+            opacity: 0.6;
+            transition: opacity 0.2s, background-color 0.2s;
+        }
+        .delete-btn:hover {
+            opacity: 1;
+            background-color: #ffe3e3;
+        }
     </style>
   </head>
   <body>
@@ -171,6 +185,8 @@
           </form>
         </section>
         <footer class="modal-card-foot is-justify-content-flex-end">
+          <button class="button is-danger is-light" id="deleteBtn" style="margin-right: auto;"
+                  onclick="deleteTransaction(document.getElementById('editRowIndex').value)">🗑️ Delete</button>
           <button class="button is-light" onclick="closeModal()">Cancel</button>
           <button class="button is-primary px-5" id="saveBtn" onclick="submitUpdate()">Finalize Transaction</button>
         </footer>
@@ -235,7 +251,10 @@
                             <span class="tag is-light mr-2">${dateStr}</span>
                             <strong class="is-size-5">$${parseFloat(rawAmount).toFixed(2)}</strong>
                         </div>
-                        <span class="is-size-7 has-text-grey-light">Row #${tx.RowIndex}</span>
+                        <div class="is-flex is-align-items-center">
+                            <span class="is-size-7 has-text-grey-light mr-3">Row #${tx.RowIndex}</span>
+                            <button class="delete-btn" title="Delete" onclick="event.stopPropagation(); deleteTransaction(${tx.RowIndex})">🗑️</button>
+                        </div>
                     </div>
                     <p class="is-size-7 has-text-grey mt-2 mb-0"><strong>Raw Notes:</strong> ${tx.Notes}</p>
                 </div>`;
@@ -296,6 +315,37 @@
           params.append('Notes', document.getElementById('editNotes').value);
           params.append('Payer', payerChecked ? payerChecked.value : '');
           params.append('Split Expense', splitChecked ? 'Yes' : 'No');
+
+          function deleteTransaction(rowIndex) {
+              rowIndex = parseInt(rowIndex, 10);
+              const tx = pendingTransactions.find(t => t.RowIndex === rowIndex);
+              const desc = tx ? `"${tx.Notes.replace('PENDING', '').trim()}"` : `row #${rowIndex}`;
+
+              if (!confirm(`Delete ${desc}? This can't be undone.`)) return;
+
+              const params = new URLSearchParams();
+              params.append('action', 'deletePendingTransaction');
+              params.append('RowIndex', rowIndex);
+
+              fetch(SCRIPT_URL, {
+                  method: "POST",
+                  body: params.toString(),
+                  headers: { "Content-Type": "application/x-www-form-urlencoded" }
+              })
+              .then(res => res.text())
+              .then(text => {
+                  let ok = true;
+                  try { ok = JSON.parse(text).success !== false; } catch (e) {}
+                  if (!ok) throw new Error(text);
+                  closeModal();
+                  showNotification("Transaction deleted.");
+                  fetchPendingQueue(); // reload so row numbers are fresh
+              })
+              .catch(err => {
+                  console.error(err);
+                  showNotification("Error deleting transaction.", true);
+              });
+          }
 
           fetch(SCRIPT_URL, {
               method: "POST",
