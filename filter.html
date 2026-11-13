@@ -132,6 +132,7 @@
                     <option value="Entertainment">🍿 Entertainment</option>
                     <option value="K Funny Money">😜 K Funny Money</option>
                     <option value="M Funny Money">😜 M Funny Money</option>
+                    <option value="Charlie Things">😍 Charlie</option>
                     <option value="Travel">🌎 Travel</option>
                     <option value="Shopping">🛍️ Shopping</option>
                     <option value="Saving">🏦 Saving</option>
@@ -175,6 +176,12 @@
     <script>
       const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbywdFiaQvUU8idDmhBiTqu8-Ir5-nFl1LNbIKrBOnm4QuWLiixY4rDOCbM2ZV7It0oc/exec";
       let allExpenses = [];
+
+      // Treats blank/missing categories as "Other"
+      function getCategory(row) {
+          const c = (row["Category"] || "").toString().trim();
+          return c === "" ? "Other" : c;
+      }
 
       // 1. Initial Data Fetch 
       function loadInitialData() {
@@ -239,7 +246,7 @@
               if (query && !notes.includes(query)) return false;
 
               // Category Filter Check
-              if (selectedCategory !== "ALL" && row["Category"] !== selectedCategory) return false;
+              if (selectedCategory !== "ALL" && getCategory(row) !== selectedCategory) return false;
 
               // Month Filter Check
               if (selectedMonth !== "ALL") {
@@ -282,13 +289,14 @@
           data.forEach(row => {
               const d = new Date(row["Transaction Date"]);
               const dateStr = isNaN(d.getTime()) ? row["Transaction Date"] : `${d.getUTCMonth() + 1}/${d.getUTCDate()}`;
-              const amt = parseFloat(row["Original Val"] || row["Final USD Expen"] || 0).toFixed(2);
+              //const amt = parseFloat(row["Original Val"] || row["Final USD Expen"] || 0).toFixed(2);
+              const amt = (parseFloat(row["Final USD Expense"]) || parseFloat(row["Original Value"]) || 0).toFixed(2);
               const notes = row["Notes"] || "-";
               
               html += `
                 <tr>
                   <td style="white-space: nowrap;">${dateStr}</td>
-                  <td>${row["Category"] || 'Other'}</td>
+                  <td>${getCategory(row)}</td>
                   <td class="has-text-weight-bold">$${amt}</td>
                   <td>${row["Payer"] || '-'}</td>
                   <td class="is-size-7" style="max-width: 250px; word-wrap: break-word; white-space: normal;">${notes}</td>
